@@ -107,15 +107,14 @@ def download(url,file_name,cookiejar=None,proxy=None):
 
 def findLink(link,html):
         if re.search("id=\"download-button\"",html,re.IGNORECASE|re.DOTALL):
-                filelink = re.search("id=\"download-button\".*\".*\"",html,re.IGNORECASE|re.DOTALL).group(0)
-                filelink = filelink.split("\"")[3]
+                filelink = re.search("id=\"download-button\"[^>]*href=\"([^\"]*)\"",html,re.IGNORECASE|re.DOTALL).group(1)
                 filename = filelink.split("/")[-1]
         elif re.search("collect_rid=\"\d*:\d*\" src=\"",html,re.IGNORECASE):
-                k = re.search("data-gmiclass=\"ResViewSizer_fullimg\".*src=\"([^\"]*)\".*class=\"fullview smshadow\">",html,re.DOTALL | re.IGNORECASE)
+                k = re.search("name=\"ResViewSizer_fullimg\".*src=\"([^\"]*)\".*class=\"fullview smshadow\">",html,re.DOTALL | re.IGNORECASE)
                 if k:
                         filelink = k.group(1)
                 else:
-                        filelink = re.search("src=\"([^\"]*)",re.search("data-gmiclass=\"ResViewSizer_fullimg\".*",html,re.DOTALL | re.IGNORECASE).group(0),re.DOTALL | re.IGNORECASE).group(1)
+                        filelink = re.search("src=\"([^\"]*)",re.search("name=\"ResViewSizer_fullimg\".*",html,re.DOTALL | re.IGNORECASE).group(0),re.DOTALL | re.IGNORECASE).group(1)
         if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
                 filename = filelink.split("/")[-1]
         elif filelink:
