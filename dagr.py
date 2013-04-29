@@ -1,8 +1,9 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# deviantArt Gallery Ripper v0.43
+# deviantArt Gallery Ripper v0.43.1
 # http://lovecastle.org/dagr/
+# https://github.com/voyageur/dagr
 
 # Copying and distribution of this file, with or without
 # modification, is permitted.
@@ -13,7 +14,7 @@ import random, re, os, sys, hashlib, getopt, urllib2, urllib, cookielib
 from urllib2 import Request, urlopen, URLError, HTTPError
 
 MAX = 1000000 #max deviations
-VERSION="0.43"
+VERSION="0.43.1"
 NAME = os.path.basename(__file__)
 USERAGENTS = (
     'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.202 Safari/535.1',
@@ -106,17 +107,12 @@ def download(url,file_name,cookiejar=None,proxy=None):
                 sys.exit()
 
 def findLink(link,html):
-        if re.search("id=\"download-button\"",html,re.IGNORECASE|re.DOTALL):
+        if re.search("collect_rid=\"\d*:\d*\" src=\"",html,re.IGNORECASE):
+                filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"fullview smshadow\">",html,re.DOTALL | re.IGNORECASE).group(1)
+        elif re.search("id=\"download-button\"",html,re.IGNORECASE|re.DOTALL):
                 filelink = re.search("id=\"download-button\"[^>]*href=\"([^\"]*)\"",html,re.IGNORECASE|re.DOTALL).group(1)
-                filename = filelink.split("/")[-1]
-        elif re.search("collect_rid=\"\d*:\d*\" src=\"",html,re.IGNORECASE):
-                k = re.search("name=\"ResViewSizer_fullimg\".*src=\"([^\"]*)\".*class=\"fullview smshadow\">",html,re.DOTALL | re.IGNORECASE)
-                if k:
-                        filelink = k.group(1)
-                else:
-                        filelink = re.search("src=\"([^\"]*)",re.search("name=\"ResViewSizer_fullimg\".*",html,re.DOTALL | re.IGNORECASE).group(0),re.DOTALL | re.IGNORECASE).group(1)
         if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
-                filename = filelink.split("/")[-1]
+                filename = filelink.split("/")[-1].split("?")[0]
         elif filelink:
                 filext = re.search("\.\w+$",filelink).group(0)
                 filename = re.sub("-[0-9]+$","",link.split("/")[-1])+"_by_"+re.search("^http://([A-Za-z0-9-_]+)\.",link).group(1)+filext
