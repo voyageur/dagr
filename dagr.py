@@ -28,6 +28,10 @@ USERAGENTS = (
     )
 DOOVERWRITE = False
 
+def daMakedirs(directory):
+        if not os.path.exists(directory):
+                os.makedirs(directory)
+
 def daLogin(username,password,proxy=None):
         jar = cookielib.CookieJar()
         handler = urllib2.HTTPCookieProcessor(jar)
@@ -179,9 +183,9 @@ def deviantGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=F
                 return 0
         else:
                 try:
-                        os.makedirs(deviant+"/"+mode)
+                        daMakedirs(deviant+"/"+mode)
                         if (mode == "query") or (mode == "album"):
-                            os.makedirs(deviant+"/"+mode+"/"+modeArg) 
+                            daMakedirs(deviant+"/"+mode+"/"+modeArg)
                 except Exception, e:
                         print str(e)
                 print "Total deviations in "+deviant+"'s gallery found:",len(pages)
@@ -300,9 +304,9 @@ def groupGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=Fal
                         
                 try:
                         if mode == "favs":
-                                os.makedirs(deviant+"/favs/"+label)
+                                daMakedirs(deviant+"/favs/"+label)
                         elif mode == "gallery":
-                                os.makedirs(deviant+"/"+label)
+                                daMakedirs(deviant+"/"+label)
                 except Exception, err:
                         print err
                 counter = 0
@@ -334,8 +338,7 @@ def printHelp():
         print NAME+" v"+VERSION+" - deviantArt gallery ripper"
         print "Usage: "+NAME+" [-u username] [-p password] [-hfgsv] [deviant]..."
         print "Example: "+NAME+" -u user -p 1234 -gsfv derp123 blah55"
-	print "For help use the -h flag, ie. dagr.py -h"
-
+        print "For help use the -h flag, ie. dagr.py -h"
 
 def printHelpDetailed():
         printHelp()
@@ -453,7 +456,7 @@ if __name__ == "__main__":
                 else:
                         print "Current deviant:",deviant
                 try:
-                        os.makedirs(deviant)
+                        daMakedirs(deviant)
                 except Exception, err:
                         print err
                         
@@ -479,3 +482,5 @@ if __name__ == "__main__":
                         if query:
                                 deviantGet("query:"+queryS,*args)
         print "Job complete."
+
+# vim: set tabstop=8 softtabstop=8 shiftwidth=8 expandtab:
