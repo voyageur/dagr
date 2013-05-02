@@ -466,7 +466,7 @@ if __name__ == "__main__":
                         if favs:
                                 deviantGet("favs",*args)
                         if album:
-                                deviatGet("album:"+albumId,*args)
+                                deviantGet("album:"+albumId,*args)
                         if query:
                                 deviantGet("query:"+queryS,*args)
         print "Job complete."
