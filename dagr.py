@@ -10,7 +10,7 @@
 
 # This file is offered as-is, without any warranty.
 
-import random, re, os, sys, hashlib, getopt, urllib2, urllib, cookielib
+import cookielib, hashlib, getopt, os, random, re, sys, urllib2
 from urllib2 import Request, urlopen, URLError, HTTPError
 
 MAX = 1000000 #max deviations
@@ -111,15 +111,19 @@ def download(url,file_name,cookiejar=None,proxy=None):
                 sys.exit()
 
 def findLink(link,html):
+        # Largest preview possible
         if re.search("collect_rid=\"\d*:\d*\" src=\"",html,re.IGNORECASE):
                 filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"fullview smshadow\">",html,re.DOTALL | re.IGNORECASE).group(1)
+        # Full image link (not working anymore, needs rewrite)
         elif re.search("id=\"download-button\"",html,re.IGNORECASE|re.DOTALL):
                 filelink = re.search("id=\"download-button\"[^>]*href=\"([^\"]*)\"",html,re.IGNORECASE|re.DOTALL).group(1)
+
         if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
                 filename = filelink.split("/")[-1].split("?")[0]
         elif filelink:
                 filext = re.search("\.\w+$",filelink).group(0)
                 filename = re.sub("-[0-9]+$","",link.split("/")[-1])+"_by_"+re.search("^http://([A-Za-z0-9-_]+)\.",link).group(1)+filext
+
         return (filename,filelink)
 
 def deviantGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=False):
