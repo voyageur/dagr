@@ -10,8 +10,8 @@
 
 # This file is offered as-is, without any warranty.
 
-import cookielib, hashlib, getopt, os, random, re, sys, urllib2
-from urllib2 import Request, urlopen, URLError, HTTPError
+import getopt, mechanize, os, random, re, sys
+from urllib2 import URLError, HTTPError
 
 MAX = 1000000 #max deviations
 VERSION="0.43.1"
@@ -27,24 +27,16 @@ USERAGENTS = (
     'Mozilla/5.0 (Windows; U; Windows NT 6.1; pl; rv:1.9.1) Gecko/20090624 Firefox/3.5 (.NET CLR 3.5.30729)'
     )
 DOOVERWRITE = False
+BROWSER = mechanize.Browser()
 
 def daMakedirs(directory):
         if not os.path.exists(directory):
                 os.makedirs(directory)
 
-def daLogin(username,password,proxy=None):
-        jar = cookielib.CookieJar()
-        handler = urllib2.HTTPCookieProcessor(jar)
-        opener = urllib2.build_opener(handler)
-        if proxy:
-                proxy_handler = urllib2.ProxyHandler({'http': proxy})
-                opener.add_handler(proxy_handler)
-        urllib2.install_opener(opener)
-        opener.addheaders = [('Referer', 'http://www.deviantart.com/')]
-        opener.addheaders = [('User-Agent', random.choice(USERAGENTS))]
+def daLogin(username,password):
         data = ""
         try:
-                f = opener.open('https://www.deviantart.com/users/login', "ref=http%3A%2F%2Fwww.deviantart.com%2F&username="+username+"&password="+password+"&remember_me=1")
+                f = BROWSER.open('https://www.deviantart.com/users/login', "ref=http%3A%2F%2Fwww.deviantart.com%2F&username="+username+"&password="+password+"&remember_me=1")
                 data = f.read()
                 f.close()
         except HTTPError, e:
@@ -59,44 +51,23 @@ def daLogin(username,password,proxy=None):
                 print "Logged in!"
         else:
                 print "Login unsuccessful. Attempting to download anyway."
-        return jar
 
-def get(url, cookiejar=None, proxy=None):
-        if cookiejar:
-                handler = urllib2.HTTPCookieProcessor(cookiejar)
-                opener = urllib2.build_opener(handler)
-        else:
-                opener = urllib2.build_opener()
-        if proxy:
-                proxy_handler = urllib2.ProxyHandler({'http': proxy})
-                opener.add_handler(proxy_handler)
-        urllib2.install_opener(opener)
-        opener.addheaders = [('User-Agent', random.choice(USERAGENTS))]
+def get(url):
         try:
-                f = opener.open(url)
+                f = BROWSER.open(url)
                 return str(f.read())
         except HTTPError, e:
                 print "HTTP Error:",e.code , url
         except URLError, e:
                 print "URL Error:",e.reason , url
 
-def download(url,file_name,cookiejar=None,proxy=None):
+def download(url,file_name):
         if (DOOVERWRITE == False) and (os.path.exists(file_name)):
                 print file_name+" exists - skipping"
                 return
         
-        if cookiejar:
-                handler = urllib2.HTTPCookieProcessor(cookiejar)
-                opener = urllib2.build_opener(handler)
-        else:
-                opener = urllib2.build_opener()
-        if proxy:
-                proxy_handler = urllib2.ProxyHandler({'http': proxy})
-                opener.add_handler(proxy_handler)
-        urllib2.install_opener(opener)
-        opener.addheaders = [('User-Agent', random.choice(USERAGENTS))]
         try:
-                f = opener.open(url)
+                f = BROWSER.open(url)
                 # Open our local file for writing
                 local_file = open(file_name, "wb")
                 #Write to our local file
@@ -111,22 +82,27 @@ def download(url,file_name,cookiejar=None,proxy=None):
                 sys.exit()
 
 def findLink(link,html):
-        # Largest preview possible
-        if re.search("collect_rid=\"\d*:\d*\" src=\"",html,re.IGNORECASE):
-                filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"fullview smshadow\">",html,re.DOTALL | re.IGNORECASE).group(1)
-        # Full image link (not working anymore, needs rewrite)
-        elif re.search("id=\"download-button\"",html,re.IGNORECASE|re.DOTALL):
-                filelink = re.search("id=\"download-button\"[^>]*href=\"([^\"]*)\"",html,re.IGNORECASE|re.DOTALL).group(1)
+        # Full image link (via download link)
+        try:
+                req = BROWSER.click_link(text_regex="Download (Image|File)")
+                BROWSER.open(req)
+                filelink = BROWSER.geturl()
+                filename = os.path.basename(filelink)
+                return (filename, filelink)
+        except mechanize.LinkNotFoundError:
+                # Fallback: largest preview possible
+                if re.search("collect_rid=\"\d*:\d*\" src=\"",html,re.IGNORECASE):
+                        filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"fullview smshadow\">",html,re.DOTALL | re.IGNORECASE).group(1)
+                        if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
+                                filename = filelink.split("/")[-1].split("?")[0]
+                        elif filelink:
+                                filext = re.search("\.\w+$",filelink).group(0)
+                                filename = re.sub("-[0-9]+$","",link.split("/")[-1])+"_by_"+re.search("^http://([A-Za-z0-9-_]+)\.",link).group(1)+filext
+                        return (filename,filelink)
+                else:
+                        return (None,None)
 
-        if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
-                filename = filelink.split("/")[-1].split("?")[0]
-        elif filelink:
-                filext = re.search("\.\w+$",filelink).group(0)
-                filename = re.sub("-[0-9]+$","",link.split("/")[-1])+"_by_"+re.search("^http://([A-Za-z0-9-_]+)\.",link).group(1)+filext
-
-        return (filename,filelink)
-
-def deviantGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=False):
+def deviantGet(mode,deviant,verbose,reverse,testOnly=False):
         print "Ripping "+deviant+"'s "+mode+"..."
         pat = "http://[a-zA-Z0-9_-]*\.deviantart\.com/art/[a-zA-Z0-9_-]*"
         modeArg = '_'
@@ -141,16 +117,16 @@ def deviantGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=F
                 html = ""
                 try:
                         if mode == "favs":
-                                html = get("http://" + deviant.lower() + ".deviantart.com/favourites/?catpath=/&offset=" + str(i), cookiejar, proxy)
+                                html = get("http://" + deviant.lower() + ".deviantart.com/favourites/?catpath=/&offset=" + str(i))
                         elif mode == "scraps":
-                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=scraps&offset=" + str(i), cookiejar, proxy)
+                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=scraps&offset=" + str(i))
                         elif mode == "gallery":
-                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=/&offset=" + str(i), cookiejar, proxy)
+                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=/&offset=" + str(i))
                         elif mode == "album":
-                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/" + modeArg + "?offset=" + str(i), cookiejar, proxy)
+                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/" + modeArg + "?offset=" + str(i))
                         elif mode == "query":
                                 print "http://" + deviant.lower() + ".deviantart.com/gallery/?q="+modeArg+"&offset=" + str(i)
-                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?q="+modeArg+"&offset=" + str(i), cookiejar, proxy)
+                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?q="+modeArg+"&offset=" + str(i))
                         else:
                                 continue
                 except HTTPError, e:
@@ -197,7 +173,7 @@ def deviantGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=F
         ##DEPTH 2
         counter2 = 0
         for link in pages:
-                html = get(link,cookiejar,proxy)
+                html = get(link)
                 counter2 += 1
                 if verbose:
                         print "Downloading",counter2,"of",len(pages),"( "+link+" )"
@@ -207,13 +183,14 @@ def deviantGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=F
                         filename,filelink = findLink(link,html)
                 except:
                         print "Download error. Possible mature deviation? (",link,")"
+                        sys.exit()
                         continue
 
                 if testOnly == False:
                         if (mode == "query") or (mode=="album"):
-                                download(filelink,deviant+"/"+mode+"/"+modeArg+"/"+filename,proxy)
+                                download(filelink,deviant+"/"+mode+"/"+modeArg+"/"+filename)
                         else:
-                                download(filelink,deviant+"/"+mode+"/"+filename,proxy)
+                                download(filelink,deviant+"/"+mode+"/"+filename)
                 else:
                         print filelink
 
@@ -221,7 +198,7 @@ def deviantGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=F
 
 
 
-def groupGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=False):
+def groupGet(mode,deviant,verbose,reverse,testOnly=False):
         if mode == "favs":
                 strmode  = "favby"
                 strmode2 = "favourites"
@@ -239,7 +216,7 @@ def groupGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=Fal
 
         insideFolder = False
         #are we inside a gallery folder?
-        html = get('http://'+deviant+'.deviantart.com/'+strmode2+'/',cookiejar,proxy)
+        html = get('http://'+deviant+'.deviantart.com/'+strmode2+'/')
         if re.search(strmode2+"/\?set=.+&offset=",html,re.IGNORECASE|re.S):
                 insideFolder = True
                 folders = re.findall(strmode+":.+ label=\"[^\"]*\"", html, re.IGNORECASE)
@@ -249,7 +226,7 @@ def groupGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=Fal
         
         i = 0
         while not insideFolder:
-                html = get('http://'+deviant+'.deviantart.com/'+strmode2+'/?offset='+str(i),cookiejar,proxy)
+                html = get('http://'+deviant+'.deviantart.com/'+strmode2+'/?offset='+str(i))
                 k = re.findall(strmode+":"+deviant+"/\d+\"\ +label=\"[^\"]*\"", html, re.IGNORECASE)
                 if k == []:
                         break
@@ -289,7 +266,7 @@ def groupGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=Fal
                 for i in range(0,MAX/24,24):                    
                         html = ""
                         try:
-                                html = get("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24), cookiejar, proxy)
+                                html = get("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24))
                         except (URLError,HTTPError):
                                 print Exception
                                 continue
@@ -315,7 +292,7 @@ def groupGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=Fal
                         print err
                 counter = 0
                 for link in pages:
-                        html = get(link,cookiejar,proxy)
+                        html = get(link)
                         counter += 1
                         if verbose:
                                 print "Downloading",counter,"of",len(pages),"( "+link+" )"
@@ -329,9 +306,9 @@ def groupGet(mode,deviant,verbose,reverse,cookiejar=None,proxy=None,testOnly=Fal
                         
                         if testOnly==False:
                                 if mode == "favs":
-                                        download(filelink,deviant+"/favs/"+label+"/"+filename,proxy)
+                                        download(filelink,deviant+"/favs/"+label+"/"+filename)
                                 elif mode == "gallery":
-                                        download(filelink,deviant+"/"+label+"/"+filename,proxy)
+                                        download(filelink,deviant+"/"+label+"/"+filename)
                         else:
                                 print filelink
                         
@@ -438,17 +415,24 @@ if __name__ == "__main__":
                 print "Nothing to do. Quitting."
                 sys.exit()
 
-        cookiejar = None
+        # Set up mechanize
+        BROWSER.set_handle_redirect(True)
+        BROWSER.set_handle_robots(False)
+        BROWSER.addheaders = [('Referer', 'http://www.deviantart.com/')]
+        BROWSER.addheaders = [('User-Agent', random.choice(USERAGENTS))]
+
         if username and password:
                 print "Attempting to log in to deviantArt..."
-                cookiejar = daLogin(username,password,proxy)
+                daLogin(username,password)
         else:
                 print "Mature deviations will not be available for download without logging in!"
+        if proxy:
+                BROWSER.set_proxies({"http": proxy})
 
         for deviant in deviants:
                 group = False
                 try:
-                        deviant = re.search(r'<title>.[A-Za-z0-9-]*', get("http://"+deviant+".deviantart.com",cookiejar,proxy),re.IGNORECASE).group(0)[7:]
+                        deviant = re.search(r'<title>.[A-Za-z0-9-]*', get("http://"+deviant+".deviantart.com"),re.IGNORECASE).group(0)[7:]
                         if re.match("#", deviant):
                                 group = True
                         deviant = re.sub('[^a-zA-Z0-9_-]+', '', deviant)
@@ -464,7 +448,7 @@ if __name__ == "__main__":
                 except Exception, err:
                         print err
                         
-                args = (deviant,verbose,reverse,cookiejar,proxy,testOnly)
+                args = (deviant,verbose,reverse,testOnly)
                 if group:
                         if scraps:
                                 print "Groups have no scraps gallery..."
