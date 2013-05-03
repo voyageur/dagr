@@ -115,20 +115,23 @@ def deviantGet(mode,deviant,verbose,reverse,testOnly=False):
         pages = []
         for i in range(0,MAX/24,24):
                 html = ""
+                url = ""
+
+                if mode == "favs":
+                        url = "http://" + deviant.lower() + ".deviantart.com/favourites/?catpath=/&offset=" + str(i)
+                elif mode == "scraps":
+                        url = "http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=scraps&offset=" + str(i)
+                elif mode == "gallery":
+                        url = "http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=/&offset=" + str(i)
+                elif mode == "album":
+                        url = "http://" + deviant.lower() + ".deviantart.com/gallery/" + modeArg + "?offset=" + str(i)
+                elif mode == "query":
+                        url = "http://" + deviant.lower() + ".deviantart.com/gallery/?q="+modeArg+"&offset=" + str(i)
+                else:
+                        continue
+
                 try:
-                        if mode == "favs":
-                                html = get("http://" + deviant.lower() + ".deviantart.com/favourites/?catpath=/&offset=" + str(i))
-                        elif mode == "scraps":
-                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=scraps&offset=" + str(i))
-                        elif mode == "gallery":
-                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=/&offset=" + str(i))
-                        elif mode == "album":
-                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/" + modeArg + "?offset=" + str(i))
-                        elif mode == "query":
-                                print "http://" + deviant.lower() + ".deviantart.com/gallery/?q="+modeArg+"&offset=" + str(i)
-                                html = get("http://" + deviant.lower() + ".deviantart.com/gallery/?q="+modeArg+"&offset=" + str(i))
-                        else:
-                                continue
+                        html = get(url)
                 except HTTPError, e:
                         print "HTTP Error:",e.code , url
                         continue
