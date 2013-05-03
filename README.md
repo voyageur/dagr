@@ -6,10 +6,12 @@ Originally developed at http://lovecastle.org/dagr/ (now defunt), development no
 
 ### Dependencies
 * a working Python installation
+* Python mechanize module (usually dev-python/mechanize or python-mechanize in your favourite package manager)
+
+Versions before 0.50 only depend on Python, but can not download full images or other file types
 
 ### Current bugs and limitations
-* Due to changes in DA page layout, dagr only downloads full-size previews of images 
-* Other file types are not downloaded (archives, PDF, ...)
+These should be tracked here: https://github.com/voyageur/dagr/issues
 
 ###  Usage
 Here's an example of how to use the script:
