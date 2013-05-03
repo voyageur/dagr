@@ -92,7 +92,7 @@ def findLink(link,html):
         except mechanize.LinkNotFoundError:
                 # Fallback: largest preview possible
                 if re.search("collect_rid=\"\d*:\d*\" src=\"",html,re.IGNORECASE):
-                        filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"fullview smshadow\">",html,re.DOTALL | re.IGNORECASE).group(1)
+                        filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*?(class=\"fullview smshadow\")*>",html,re.DOTALL | re.IGNORECASE).group(1)
                         if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
                                 filename = filelink.split("/")[-1].split("?")[0]
                         elif filelink:
