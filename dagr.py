@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*-
 
-# deviantArt Gallery Ripper v0.43.1
+# deviantArt Gallery Ripper
 # http://lovecastle.org/dagr/
 # https://github.com/voyageur/dagr
 
@@ -14,7 +14,7 @@ import getopt, mechanize, os, random, re, sys
 from urllib2 import URLError, HTTPError
 
 MAX = 1000000 #max deviations
-VERSION="0.43.1"
+VERSION="0.50"
 NAME = os.path.basename(__file__)
 USERAGENTS = (
     'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.202 Safari/535.1',
