@@ -12,6 +12,7 @@
 
 import getopt, mechanize, os, random, re, sys
 from urllib2 import URLError, HTTPError
+from httplib import IncompleteRead
 
 MAX = 1000000 #max deviations
 VERSION="0.50"
@@ -53,13 +54,26 @@ def daLogin(username,password):
                 print "Login unsuccessful. Attempting to download anyway."
 
 def get(url):
-        try:
-                f = BROWSER.open(url)
-                return str(f.read())
-        except HTTPError, e:
-                print "HTTP Error:",e.code , url
-        except URLError, e:
-                print "URL Error:",e.reason , url
+        remaining_tries = 3
+        while 1:
+                try:
+                        f = BROWSER.open(url)
+                        return str(f.read())
+                except HTTPError, e:
+                        print "HTTP Error: ", e.code , url
+                        remaining_tries -= 1
+                        if remaining_tries == 0:
+                                raise
+                except URLError, e:
+                        print "URL Error: ", e.reason , url
+                        remaining_tries -= 1
+                        if remaining_tries == 0:
+                                raise
+                except IncompleteRead:
+                        print "Incomplete read: ", url
+                        remaining_tries -= 1
+                        if remaining_tries == 0:
+                                raise
 
 def download(url,file_name):
         if (DOOVERWRITE == False) and (os.path.exists(file_name)):
@@ -130,17 +144,7 @@ def deviantGet(mode,deviant,verbose,reverse,testOnly=False):
                 else:
                         continue
 
-                try:
-                        html = get(url)
-                except HTTPError, e:
-                        print "HTTP Error:",e.code , url
-                        continue
-                except URLError, e:
-                        print "URL Error:",e.reason , url
-                        continue
-                except Exception, e:
-                        print e
-                        continue
+                html = get(url)
                 prelim = re.findall(pat, html, re.IGNORECASE|re.DOTALL)
                 
                 c = len(prelim)
@@ -267,12 +271,7 @@ def groupGet(mode,deviant,verbose,reverse,testOnly=False):
                 except:
                         continue
                 for i in range(0,MAX/24,24):                    
-                        html = ""
-                        try:
-                                html = get("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24))
-                        except (URLError,HTTPError):
-                                print Exception
-                                continue
+                        html = get("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24))
                         prelim = re.findall(pat, html, re.IGNORECASE)
                         if not prelim:
                                 break
