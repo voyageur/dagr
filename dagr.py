@@ -37,18 +37,21 @@ def daMakedirs(directory):
 def daLogin(username,password):
         data = ""
         try:
-                f = BROWSER.open('https://www.deviantart.com/users/login', "ref=http%3A%2F%2Fwww.deviantart.com%2F&username="+username+"&password="+password+"&remember_me=1")
-                data = f.read()
-                f.close()
+                BROWSER.open('https://www.deviantart.com/users/login', "ref=http%3A%2F%2Fwww.deviantart.com%2F&remember_me=1")
+                BROWSER.select_form(nr=1)
+                BROWSER.form['username'] = username
+                BROWSER.form['password'] = password
+                BROWSER.submit()
+                data = BROWSER.response().read()
         except HTTPError, e:
                 print "HTTP Error:",e.code
                 sys.exit()
         except URLError, e:
                 print "URL Error:",e.reason
                 sys.exit()
-        if re.search("<title>deviantART\ +:\ +Wrong Password!</title>",data):
+        if re.search("The password you entered was incorrect",data):
                 print "Wrong password or username. Attempting to download anyway."
-        elif re.search("<title>deviantART:\ +where\ +ART\ +meets\ +application!</title>",data):
+        elif re.search("\"loggedIn\":true",data):
                 print "Logged in!"
         else:
                 print "Login unsuccessful. Attempting to download anyway."
