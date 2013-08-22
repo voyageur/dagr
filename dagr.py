@@ -15,7 +15,7 @@ from urllib2 import URLError, HTTPError
 from httplib import IncompleteRead
 
 MAX = 1000000 #max deviations
-VERSION="0.50"
+VERSION="0.51"
 NAME = os.path.basename(__file__)
 USERAGENTS = (
     'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.202 Safari/535.1',
