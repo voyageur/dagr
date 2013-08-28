@@ -98,15 +98,17 @@ def download(url,file_name):
                 print e
                 sys.exit()
 
-def findLink(link,html):
+def findLink(link):
+        html = get(link)
         # Full image link (via download link)
         try:
-                req = BROWSER.click_link(text_regex="Download (Image|File)")
+                req = BROWSER.click_link(text_regex="Download( (Image|File))?")
                 BROWSER.open(req)
                 filelink = BROWSER.geturl()
                 filename = os.path.basename(filelink)
                 return (filename, filelink)
         except mechanize.LinkNotFoundError:
+                # VOYA TODO fix this fallback system
                 # Fallback: largest preview possible
                 if re.search("collect_rid=\"\d*:\d*\" src=\"",html,re.IGNORECASE):
                         filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*?(class=\"fullview smshadow\")*>",html,re.DOTALL | re.IGNORECASE).group(1)
@@ -183,17 +185,15 @@ def deviantGet(mode,deviant,verbose,reverse,testOnly=False):
         ##DEPTH 2
         counter2 = 0
         for link in pages:
-                html = get(link)
                 counter2 += 1
                 if verbose:
                         print "Downloading",counter2,"of",len(pages),"( "+link+" )"
                 filename = ""
                 filelink = ""
                 try:
-                        filename,filelink = findLink(link,html)
+                        filename,filelink = findLink(link)
                 except:
                         print "Download error. Possible mature deviation? (",link,")"
-                        sys.exit()
                         continue
 
                 if testOnly == False:
@@ -297,14 +297,13 @@ def groupGet(mode,deviant,verbose,reverse,testOnly=False):
                         print err
                 counter = 0
                 for link in pages:
-                        html = get(link)
                         counter += 1
                         if verbose:
                                 print "Downloading",counter,"of",len(pages),"( "+link+" )"
                         filename = ""
                         filelink = ""
                         try:
-                                filename,filelink = findLink(link,html)
+                                filename,filelink = findLink(link)
                         except:
                                 print "Download error. Possible mature deviation? (",link,")"
                                 continue
