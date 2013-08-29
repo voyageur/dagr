@@ -108,6 +108,8 @@ def findLink(link):
                 filename = os.path.basename(filelink)
                 return (filename, filelink)
         except mechanize.LinkNotFoundError:
+                if verbose:
+                        print "Download link not found, falling back to preview image"
                 # Fallback: largest preview possible
                 filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*?(class=\"fullview smshadow\")*>",html,re.DOTALL | re.IGNORECASE).group(1)
                 if filelink:
