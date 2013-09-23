@@ -110,9 +110,18 @@ def findLink(link):
         except mechanize.LinkNotFoundError:
                 if verbose:
                         print "Download link not found, falling back to preview image"
-                # Fallback: largest preview possible
-                filelink = re.search("name=\"[^\"]*ResViewSizer_fullimg[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*?(class=\"fullview smshadow\")*>",html,re.DOTALL | re.IGNORECASE).group(1)
-                if filelink:
+                # Fallback 1: try meta
+                filesearch = re.search("<meta[^>]*name=\"og:image\"[^>]*content=\"([^\"]*)\"[^>]*>", html, re.DOTALL | re.IGNORECASE)
+                if not filesearch:
+                        # Fallback 2: try collect_rid, full
+                        filesearch = re.search("<img[^>]*collect_rid=\"[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"[^\"]*full[^\"]*\"[^>]*>", html, re.DOTALL | re.IGNORECASE)
+                if not filesearch:
+                        # Fallback 3: try collect_rid, normal
+                        filesearch = re.search("<img[^>]*collect_rid=\"[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"[^\"]*normal[^\"]*\"[^>]*>", html, re.DOTALL | re.IGNORECASE)
+
+                if filesearch:
+                        filelink = filesearch.group(1)
+                        print filelink
                         if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
                                 filename = filelink.split("/")[-1].split("?")[0]
                         else:
