@@ -10,7 +10,7 @@
 
 # This file is offered as-is, without any warranty.
 
-import getopt, mechanize, os, random, re, sys
+import getopt, mechanize, os, random, re, sys, traceback
 from urllib2 import URLError, HTTPError
 from httplib import IncompleteRead
 
@@ -29,6 +29,12 @@ USERAGENTS = (
     )
 DOOVERWRITE = False
 BROWSER = mechanize.Browser()
+
+class DagrException(Exception):
+        def __init__(self, value):
+                self.parameter = value
+        def __str__(self):
+                return repr(self.parameter)
 
 def daMakedirs(directory):
         if not os.path.exists(directory):
@@ -63,17 +69,20 @@ def get(url):
                         f = BROWSER.open(url)
                         return str(f.read())
                 except HTTPError, e:
-                        print "HTTP Error: ", e.code , url
+                        if verbose:
+                                print "HTTP Error: ", e.code , url
                         remaining_tries -= 1
                         if remaining_tries == 0:
                                 raise
                 except URLError, e:
-                        print "URL Error: ", e.reason , url
+                        if verbose:
+                                print "URL Error: ", e.reason , url
                         remaining_tries -= 1
                         if remaining_tries == 0:
                                 raise
                 except IncompleteRead:
-                        print "Incomplete read: ", url
+                        if verbose:
+                                print "Incomplete read: ", url
                         remaining_tries -= 1
                         if remaining_tries == 0:
                                 raise
@@ -95,7 +104,7 @@ def download(url,file_name):
         except URLError, e:
                 print "URL Error:",e.reason , url
         except IOError, e:
-                print e
+                print "I/O Error:",e, url
                 sys.exit()
 
 def findLink(link):
@@ -107,7 +116,7 @@ def findLink(link):
                 filelink = BROWSER.geturl()
                 filename = os.path.basename(filelink)
                 return (filename, filelink)
-        except mechanize.LinkNotFoundError:
+        except mechanize.DagrError:
                 if verbose:
                         print "Download link not found, falling back to preview image"
                 # Fallback 1: try meta
@@ -128,9 +137,16 @@ def findLink(link):
                                 filename = re.sub("-[0-9]+$","",link.split("/")[-1])+"_by_"+re.search("^http://([A-Za-z0-9-_]+)\.",link).group(1)+filext
                         return (filename,filelink)
                 else:
-                        return (None,None)
+                        raise DagrException("all attemps to find a link failed")
 
-def deviantGet(mode,deviant,verbose,reverse,testOnly=False):
+def handle_download_error(link):
+        print "Download error (",link,")"
+        if verbose:
+                traceback.print_exc(file=sys.stdout)
+        else:
+                print "Use verbose mode to display the error"
+
+def deviantGet(mode,deviant,reverse,testOnly=False):
         print "Ripping "+deviant+"'s "+mode+"..."
         pat = "http://[a-zA-Z0-9_-]*\.deviantart\.com/art/[a-zA-Z0-9_-]*"
         modeArg = '_'
@@ -202,7 +218,7 @@ def deviantGet(mode,deviant,verbose,reverse,testOnly=False):
                 try:
                         filename,filelink = findLink(link)
                 except:
-                        print "Download error. Possible mature deviation? (",link,")"
+                        handle_download_error(link)
                         continue
 
                 if testOnly == False:
@@ -217,7 +233,7 @@ def deviantGet(mode,deviant,verbose,reverse,testOnly=False):
 
 
 
-def groupGet(mode,deviant,verbose,reverse,testOnly=False):
+def groupGet(mode,deviant,reverse,testOnly=False):
         if mode == "favs":
                 strmode  = "favby"
                 strmode2 = "favourites"
@@ -314,7 +330,7 @@ def groupGet(mode,deviant,verbose,reverse,testOnly=False):
                         try:
                                 filename,filelink = findLink(link)
                         except:
-                                print "Download error. Possible mature deviation? (",link,")"
+                                handle_download_error(link)
                                 continue
                         
                         if testOnly==False:
@@ -438,7 +454,8 @@ if __name__ == "__main__":
                 print "Attempting to log in to deviantArt..."
                 daLogin(username,password)
         else:
-                print "Mature deviations will not be available for download without logging in!"
+                if verbose:
+                        print "Mature deviations will not be available for download without logging in!"
         if proxy:
                 BROWSER.set_proxies({"http": proxy})
 
@@ -461,7 +478,7 @@ if __name__ == "__main__":
                 except Exception, err:
                         print err
                         
-                args = (deviant,verbose,reverse,testOnly)
+                args = (deviant,reverse,testOnly)
                 if group:
                         if scraps:
                                 print "Groups have no scraps gallery..."
