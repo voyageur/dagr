@@ -14,6 +14,18 @@ import getopt, mechanize, os, random, re, sys, traceback
 from urllib2 import URLError, HTTPError
 from httplib import IncompleteRead
 
+class DagrException(Exception):
+        def __init__(self, value):
+                self.parameter = value
+        def __str__(self):
+                return repr(self.parameter)
+
+class NoHistory(object):
+        def add(self, *a, **k):
+                pass
+        def clear(self):
+                pass
+
 MAX = 1000000 #max deviations
 VERSION="0.51"
 NAME = os.path.basename(__file__)
@@ -28,13 +40,7 @@ USERAGENTS = (
     'Mozilla/5.0 (Windows; U; Windows NT 6.1; pl; rv:1.9.1) Gecko/20090624 Firefox/3.5 (.NET CLR 3.5.30729)'
     )
 DOOVERWRITE = False
-BROWSER = mechanize.Browser()
-
-class DagrException(Exception):
-        def __init__(self, value):
-                self.parameter = value
-        def __str__(self):
-                return repr(self.parameter)
+BROWSER = mechanize.Browser(history=NoHistory())
 
 def daMakedirs(directory):
         if not os.path.exists(directory):
