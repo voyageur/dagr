@@ -91,7 +91,7 @@ def get(url, file_name = None):
                         remaining_tries -= 1
                         if remaining_tries == 0:
                                 raise
-        
+
         if file_name is None:
                 return str(output)
         else:
@@ -170,22 +170,22 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
 
                 html = get(url)
                 prelim = re.findall(pat, html, re.IGNORECASE|re.DOTALL)
-                
+
                 c = len(prelim)
                 for match in prelim:
                         if match in pages:
                                 c -= 1
                         else:
                                 pages.append(match)
-                
+
                 done = re.findall("(This section has no deviations yet!|This collection has no items yet!)", html, re.IGNORECASE|re.S)
-                
+
                 if len(done) >= 1 or c <= 0:
                         break
-                
+
                 print deviant+"'s",mode,"page",str((i/24)+1),"crawled..."
-                
-                        
+
+
         if not reverse:
                 pages.reverse()
 
@@ -200,7 +200,7 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
                 except Exception, e:
                         print str(e)
                 print "Total deviations in "+deviant+"'s gallery found:",len(pages)
-                
+
         ##DEPTH 2
         counter2 = 0
         for link in pages:
@@ -211,6 +211,8 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
                 filelink = ""
                 try:
                         filename,filelink = findLink(link)
+                except (KeyboardInterrupt, SystemExit):
+                        raise
                 except:
                         handle_download_error(link)
                         continue
@@ -240,7 +242,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                 print "?"
                 sys.exit()
         print "Ripping "+deviant+"'s",strmode2+"..."
-        
+
         folders = []
 
         insideFolder = False
@@ -249,10 +251,10 @@ def groupGet(mode,deviant,reverse,testOnly=False):
         if re.search(strmode2+"/\?set=.+&offset=",html,re.IGNORECASE|re.S):
                 insideFolder = True
                 folders = re.findall(strmode+":.+ label=\"[^\"]*\"", html, re.IGNORECASE)
-        
-        #no repeats     
+
+        #no repeats
         folders = list(set(folders))
-        
+
         i = 0
         while not insideFolder:
                 html = get('http://'+deviant+'.deviantart.com/'+strmode2+'/?offset='+str(i))
@@ -279,7 +281,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                 return 0
         else:
                 print "Total folders in "+deviant+"'s",strmode3,"found:",len(folders)
-                
+
         if reverse:
                 folders.reverse()
 
@@ -292,7 +294,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                         label = re.search("label=\"([^\"]*)",folder,re.IGNORECASE).group(1)
                 except:
                         continue
-                for i in range(0,MAX/24,24):                    
+                for i in range(0,MAX/24,24):
                         html = get("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24))
                         prelim = re.findall(pat, html, re.IGNORECASE)
                         if not prelim:
@@ -306,7 +308,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
 
                 if not reverse:
                         pages.reverse()
-                        
+
                 try:
                         if mode == "favs":
                                 daMakedirs(deviant+"/favs/"+label)
@@ -323,10 +325,12 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                         filelink = ""
                         try:
                                 filename,filelink = findLink(link)
+                        except (KeyboardInterrupt, SystemExit):
+                                raise
                         except:
                                 handle_download_error(link)
                                 continue
-                        
+
                         if testOnly==False:
                                 if mode == "favs":
                                         get(filelink, deviant+"/favs/"+label+"/"+filename)
@@ -334,7 +338,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                                         get(filelink, deviant+"/"+label+"/"+filename)
                         else:
                                 print filelink
-                        
+
 
         print deviant+"'s",strmode3,"successfully ripped."
 
@@ -429,7 +433,7 @@ if __name__ == "__main__":
                         testOnly = True
                 elif opt in ('-o', '--overwrite'):
                         DOOVERWRITE = True
-        
+
         print NAME+" v"+VERSION+" - deviantArt gallery ripper"
         if deviants == []:
                 print "No deviants entered. Quitting."
@@ -471,7 +475,7 @@ if __name__ == "__main__":
                         daMakedirs(deviant)
                 except Exception, err:
                         print err
-                        
+
                 args = (deviant,reverse,testOnly)
                 if group:
                         if scraps:
