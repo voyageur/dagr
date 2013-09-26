@@ -62,12 +62,17 @@ def daLogin(username,password):
         else:
                 print "Login unsuccessful. Attempting to download anyway."
 
-def get(url):
+def get(url, file_name = None):
+        if file_name is not None and (DOOVERWRITE == False) and (os.path.exists(file_name)):
+                print file_name+" exists - skipping"
+                return
+
         remaining_tries = 3
         while 1:
                 try:
                         f = BROWSER.open(url)
-                        return str(f.read())
+                        output = f.read()
+                        break
                 except HTTPError, e:
                         if verbose:
                                 print "HTTP Error: ", e.code , url
@@ -86,26 +91,15 @@ def get(url):
                         remaining_tries -= 1
                         if remaining_tries == 0:
                                 raise
-
-def download(url,file_name):
-        if (DOOVERWRITE == False) and (os.path.exists(file_name)):
-                print file_name+" exists - skipping"
-                return
         
-        try:
-                f = BROWSER.open(url)
+        if file_name is None:
+                return str(output)
+        else:
                 # Open our local file for writing
                 local_file = open(file_name, "wb")
                 #Write to our local file
-                local_file.write(f.read())
+                local_file.write(output)
                 local_file.close()
-        except HTTPError, e:
-                print "HTTP Error:",e.code , url
-        except URLError, e:
-                print "URL Error:",e.reason , url
-        except IOError, e:
-                print "I/O Error:",e, url
-                sys.exit()
 
 def findLink(link):
         html = get(link)
@@ -116,7 +110,7 @@ def findLink(link):
                 filelink = BROWSER.geturl()
                 filename = os.path.basename(filelink)
                 return (filename, filelink)
-        except mechanize.DagrError:
+        except mechanize.LinkNotFoundError:
                 if verbose:
                         print "Download link not found, falling back to preview image"
                 # Fallback 1: try meta
@@ -223,9 +217,9 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
 
                 if testOnly == False:
                         if (mode == "query") or (mode=="album"):
-                                download(filelink,deviant+"/"+mode+"/"+modeArg+"/"+filename)
+                                get(filelink,deviant+"/"+mode+"/"+modeArg+"/"+filename)
                         else:
-                                download(filelink,deviant+"/"+mode+"/"+filename)
+                                get(filelink,deviant+"/"+mode+"/"+filename)
                 else:
                         print filelink
 
@@ -335,9 +329,9 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                         
                         if testOnly==False:
                                 if mode == "favs":
-                                        download(filelink,deviant+"/favs/"+label+"/"+filename)
+                                        get(filelink, deviant+"/favs/"+label+"/"+filename)
                                 elif mode == "gallery":
-                                        download(filelink,deviant+"/"+label+"/"+filename)
+                                        get(filelink, deviant+"/"+label+"/"+filename)
                         else:
                                 print filelink
                         
