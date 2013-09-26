@@ -121,7 +121,6 @@ def findLink(link):
 
                 if filesearch:
                         filelink = filesearch.group(1)
-                        print filelink
                         if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
                                 filename = filelink.split("/")[-1].split("?")[0]
                         else:
