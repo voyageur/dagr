@@ -31,13 +31,13 @@ Ripping doo22's gallery...
 
 
 ### FAQ
-- Will I be banned from deviantArt if I use dagr.py?
+- Will I be banned from deviantArt if I use dagr.py?  
 Not likely. However, dagr.py could be blocked at any time. If you want to be sure your main account isn't banned, use a disposable account and a proxy.
 
-- The deviantArt page says a deviant has 145 deviations but the program can only find 139!
+- The deviantArt page says a deviant has 145 deviations but the program can only find 139!  
 Sometimes deviantArt reports the wrong number of deviations in a gallery. This is because you can submit deviations exclusively to a group without having it show up in your gallery.
 
-- Why can I not download mature deviations?
+- Why can I not download mature deviations?  
 You must use a deviantArt account that is able to view such deviations, and has "Show Deviations with Mature Content" enabled under Settings > Browsing.
 
 

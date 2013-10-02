@@ -379,7 +379,7 @@ def printHelp():
         print NAME+" v"+VERSION+" - deviantArt gallery ripper"
         print "Usage: "+NAME+" [-u username] [-p password] [-hfgsv] [deviant]..."
         print "Example: "+NAME+" -u user -p 1234 -gsfv derp123 blah55"
-        print "For help use the -h flag, ie. dagr.py -h"
+        print "For extended help and other options, run "+NAME+" -h"
 
 def printHelpDetailed():
         printHelp()
