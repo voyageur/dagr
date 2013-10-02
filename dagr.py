@@ -39,7 +39,6 @@ USERAGENTS = (
     'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.2 (KHTML, like Gecko) Chrome/6.0',
     'Mozilla/5.0 (Windows; U; Windows NT 6.1; pl; rv:1.9.1) Gecko/20090624 Firefox/3.5 (.NET CLR 3.5.30729)'
     )
-DOOVERWRITE = False
 BROWSER = mechanize.Browser(history=NoHistory())
 
 def daMakedirs(directory):
@@ -69,7 +68,7 @@ def daLogin(username,password):
                 print "Login unsuccessful. Attempting to download anyway."
 
 def get(url, file_name = None):
-        if file_name is not None and (DOOVERWRITE == False) and (os.path.exists(file_name)):
+        if file_name is not None and (overwrite == False) and (os.path.exists(file_name)):
                 print file_name+" exists - skipping"
                 return
 
@@ -395,6 +394,7 @@ if __name__ == "__main__":
         proxy = None
         gallery = False
         verbose = False
+        overwrite = False
         reverse = False
         scraps = False
         favs = False
@@ -438,7 +438,7 @@ if __name__ == "__main__":
                 elif opt in ('-t', '--test'):
                         testOnly = True
                 elif opt in ('-o', '--overwrite'):
-                        DOOVERWRITE = True
+                        overwrite = True
 
         print NAME+" v"+VERSION+" - deviantArt gallery ripper"
         if deviants == []:
