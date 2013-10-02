@@ -39,11 +39,21 @@ USERAGENTS = (
     'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.2 (KHTML, like Gecko) Chrome/6.0',
     'Mozilla/5.0 (Windows; U; Windows NT 6.1; pl; rv:1.9.1) Gecko/20090624 Firefox/3.5 (.NET CLR 3.5.30729)'
     )
-BROWSER = mechanize.Browser(history=NoHistory())
 
 def daMakedirs(directory):
         if not os.path.exists(directory):
                 os.makedirs(directory)
+
+def daSetBrowser():
+        global BROWSER
+        if beautifulsoup:
+                BROWSER = mechanize.Browser(history=NoHistory(), factory=mechanize.RobustFactory())
+        else:
+                BROWSER = mechanize.Browser(history=NoHistory())
+        BROWSER.set_handle_redirect(True)
+        BROWSER.set_handle_robots(False)
+        BROWSER.addheaders = [('Referer', 'http://www.deviantart.com/')]
+        BROWSER.addheaders = [('User-Agent', random.choice(USERAGENTS))]
 
 def daLogin(username,password):
         data = ""
@@ -380,6 +390,8 @@ def printHelpDetailed():
         print " redownloads a file even if it already exists"
         print "-x, --proxy=PROXY:PORT"
         print " enables proxy mode (very unreliable)"
+        print "-b, --beautifulsoup"
+        print " enables BeautifulSoup HTML parser (for problematic pages)"
         print "-v, --verbose"
         print " outputs detailed information on downloads"
 
@@ -389,12 +401,14 @@ if __name__ == "__main__":
                 sys.exit()
 
         #defaults
+        BROWSER = None
         username = ""
         password = ""
         proxy = None
         gallery = False
         verbose = False
         overwrite = False
+        beautifulsoup = False
         reverse = False
         scraps = False
         favs = False
@@ -405,9 +419,9 @@ if __name__ == "__main__":
         queryS = ""
 
         try:
-                options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:x:a:q:vfgshrto', ['username=', 'password=', 'proxy=','album=', 'query=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite'])
+                options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:x:a:q:vfgshrtob', ['username=', 'password=', 'proxy=','album=', 'query=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite', 'beautifulsoup'])
         except getopt.GetoptError, err:
-                print "Error:",str(err)
+                print "Options error:",str(err)
                 sys.exit()
         for opt, arg in options:
                 if opt in ('-h', '--help'):
@@ -439,6 +453,8 @@ if __name__ == "__main__":
                         testOnly = True
                 elif opt in ('-o', '--overwrite'):
                         overwrite = True
+                elif opt in ('-b', '--beautifulsoup'):
+                        beautifulsoup = True
 
         print NAME+" v"+VERSION+" - deviantArt gallery ripper"
         if deviants == []:
@@ -449,17 +465,14 @@ if __name__ == "__main__":
                 sys.exit()
 
         # Set up mechanize
-        BROWSER.set_handle_redirect(True)
-        BROWSER.set_handle_robots(False)
-        BROWSER.addheaders = [('Referer', 'http://www.deviantart.com/')]
-        BROWSER.addheaders = [('User-Agent', random.choice(USERAGENTS))]
+        daSetBrowser()
 
         if username and password:
                 print "Attempting to log in to deviantArt..."
                 daLogin(username,password)
         else:
                 if verbose:
-                        print "Mature deviations will not be available for download without logging in!"
+                        print "Mature deviations will not be available for download without logging in"
         if proxy:
                 BROWSER.set_proxies({"http": proxy})
 
