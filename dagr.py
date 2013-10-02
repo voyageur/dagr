@@ -26,8 +26,8 @@ class NoHistory(object):
         def clear(self):
                 pass
 
-MAX = 1000000 #max deviations
-VERSION="0.51"
+MAX = 1000000 # max deviations
+VERSION="0.52"
 NAME = os.path.basename(__file__)
 USERAGENTS = (
     'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.202 Safari/535.1',
@@ -45,6 +45,24 @@ def daMakedirs(directory):
                 os.makedirs(directory)
 
 def daSetBrowser():
+        # Unicode handling with ActivePython can be problematic
+        # https://github.com/voyageur/dagr/issues/3
+        if sys.platform == 'win32':
+                def new_unescape_charref(data, encoding):
+                        name, base = data, 10
+                        if name.startswith("x"):
+                                name, base= name[1:], 16
+                        uc = name.encode("utf-16")
+                        if encoding is None:
+                                return uc
+                        else:
+                                try:
+                                        repl = uc.encode(encoding)
+                                except UnicodeError:
+                                        repl = "&#%s;" % data
+                                return repl
+                mechanize._html.unescape_charref = new_unescape_charref
+
         global BROWSER
         if beautifulsoup:
                 BROWSER = mechanize.Browser(history=NoHistory(), factory=mechanize.RobustFactory())
