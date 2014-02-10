@@ -101,7 +101,7 @@ def get(url, file_name = None):
                 return
 
         remaining_tries = 3
-        while 1:
+        while remaining_tries > 0:
                 try:
                         f = BROWSER.open(url)
                         output = f.read()
@@ -110,29 +110,26 @@ def get(url, file_name = None):
                         if verbose:
                                 print "HTTP Error: ", e.code , url
                         remaining_tries -= 1
-                        if remaining_tries == 0:
-                                raise
                 except URLError, e:
                         if verbose:
                                 print "URL Error: ", e.reason , url
                         remaining_tries -= 1
-                        if remaining_tries == 0:
-                                raise
                 except IncompleteRead:
                         if verbose:
                                 print "Incomplete read: ", url
                         remaining_tries -= 1
-                        if remaining_tries == 0:
-                                raise
 
         if file_name is None:
                 return str(output)
         else:
-                # Open our local file for writing
-                local_file = open(file_name, "wb")
-                #Write to our local file
-                local_file.write(output)
-                local_file.close()
+                if (remaining_tries == 0) or (len(output) == 0):
+                        print "Reading file failed, skipping"
+                else:
+                        # Open our local file for writing
+                        local_file = open(file_name, "wb")
+                        #Write to our local file
+                        local_file.write(output)
+                        local_file.close()
 
 def findLink(link):
         html = get(link)
