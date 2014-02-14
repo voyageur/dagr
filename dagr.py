@@ -187,6 +187,8 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
 
                 if mode == "favs":
                         url = "http://" + deviant.lower() + ".deviantart.com/favourites/?catpath=/&offset=" + str(i)
+                elif mode == "collection":
+                        url = "http://" + deviant.lower() + ".deviantart.com/favourites/" + modeArg + "?offset=" + str(i)
                 elif mode == "scraps":
                         url = "http://" + deviant.lower() + ".deviantart.com/gallery/?catpath=scraps&offset=" + str(i)
                 elif mode == "gallery":
@@ -225,7 +227,7 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
         else:
                 try:
                         daMakedirs(deviant+"/"+mode)
-                        if (mode == "query") or (mode == "album"):
+                        if (mode == "query") or (mode == "album") or (mode == "collection"):
                             daMakedirs(deviant+"/"+mode+"/"+modeArg)
                 except Exception, e:
                         print str(e)
@@ -248,7 +250,7 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
                         continue
 
                 if testOnly == False:
-                        if (mode == "query") or (mode=="album"):
+                        if (mode == "query") or (mode=="album") or (mode == "collection"):
                                 get(filelink,deviant+"/"+mode+"/"+modeArg+"/"+filename)
                         else:
                                 get(filelink,deviant+"/"+mode+"/"+filename)
@@ -391,6 +393,8 @@ def printHelpDetailed():
         print " downloads entire scraps gallery of selected deviants"
         print "-f, --favs"
         print " downloads all favourites of selected deviants"
+        print "-c, --collection=#####"
+        print " downloads all artwork from given favourites collection of selected deviants"
         print "-a, --album=#####"
         print " downloads specified album"
         print "-q, --query"
@@ -427,6 +431,8 @@ if __name__ == "__main__":
         reverse = False
         scraps = False
         favs = False
+        collection = False
+        collectionS = ""
         testOnly = False
         album = False
         albumId = -1
@@ -434,7 +440,7 @@ if __name__ == "__main__":
         queryS = ""
 
         try:
-                options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:x:a:q:vfgshrtob', ['username=', 'password=', 'proxy=','album=', 'query=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite', 'beautifulsoup'])
+                options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:x:a:q:c:vfgshrtob', ['username=', 'password=', 'proxy=','album=', 'query=', 'collection=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite', 'beautifulsoup'])
         except getopt.GetoptError, err:
                 print "Options error:",str(err)
                 sys.exit()
@@ -456,6 +462,9 @@ if __name__ == "__main__":
                         reverse = True
                 elif opt in ('-f', '--favs'):
                         favs = True
+                elif opt in ('-c', '--collection'):
+                        collection = True
+                        collectionS = arg.strip().strip('"')
                 elif opt in ('-v', '--verbose'):
                         verbose = True
                 elif opt in ('-a', '--album'):
@@ -475,7 +484,7 @@ if __name__ == "__main__":
         if deviants == []:
                 print "No deviants entered. Quitting."
                 sys.exit()
-        if not gallery and not scraps and not favs and not album and not query:
+        if not gallery and not scraps and not favs and not collection and not album and not query:
                 print "Nothing to do. Quitting."
                 sys.exit()
 
@@ -527,6 +536,8 @@ if __name__ == "__main__":
                                 deviantGet("scraps",*args)
                         if favs:
                                 deviantGet("favs",*args)
+                        if collection:
+                                deviantGet("collection:"+collectionS,*args)
                         if album:
                                 deviantGet("album:"+albumId,*args)
                         if query:
