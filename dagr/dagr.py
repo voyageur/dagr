@@ -10,9 +10,12 @@
 
 # This file is offered as-is, without any warranty.
 
-import getopt, mechanize, os, random, re, sys, traceback
-from urllib2 import URLError, HTTPError
-from httplib import IncompleteRead
+import getopt, random, re, sys
+from os import makedirs
+from os.path import basename, exists as path_exists
+
+from robobrowser import RoboBrowser
+from requests import session as req_session
 
 class DagrException(Exception):
         def __init__(self, value):
@@ -20,15 +23,9 @@ class DagrException(Exception):
         def __str__(self):
                 return repr(self.parameter)
 
-class NoHistory(object):
-        def add(self, *a, **k):
-                pass
-        def clear(self):
-                pass
-
 MAX = 1000000 # max deviations
-VERSION="0.52"
-NAME = os.path.basename(__file__)
+VERSION="0.60"
+NAME = basename(__file__)
 USERAGENTS = (
     'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.202 Safari/535.1',
     'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20100101',
@@ -41,134 +38,85 @@ USERAGENTS = (
     )
 
 def daMakedirs(directory):
-        if not os.path.exists(directory):
-                os.makedirs(directory)
+        if not path_exists(directory):
+                makedirs(directory)
 
 def daSetBrowser():
-        # Unicode handling with ActivePython can be problematic
-        # https://github.com/voyageur/dagr/issues/3
-        if sys.platform == 'win32':
-                def new_unescape_charref(data, encoding):
-                        name, base = data, 10
-                        if name.startswith("x"):
-                                name, base= name[1:], 16
-                        uc = name.encode("utf-16")
-                        if encoding is None:
-                                return uc
-                        else:
-                                try:
-                                        repl = uc.encode(encoding)
-                                except UnicodeError:
-                                        repl = "&#%s;" % data
-                                return repl
-                mechanize._html.unescape_charref = new_unescape_charref
-
         global BROWSER
-        if beautifulsoup:
-                BROWSER = mechanize.Browser(history=NoHistory(), factory=mechanize.RobustFactory())
-        else:
-                BROWSER = mechanize.Browser(history=NoHistory())
-        BROWSER.set_handle_redirect(True)
-        BROWSER.set_handle_robots(False)
-        BROWSER.addheaders = [('Referer', 'http://www.deviantart.com/')]
-        BROWSER.addheaders = [('User-Agent', random.choice(USERAGENTS))]
+        session = req_session()
+        session.headers.update({'Referer': 'http://www.deviantart.com/'})
+
+        BROWSER = RoboBrowser(history=False, session=session, tries=3, user_agent=random.choice(USERAGENTS))
 
 def daLogin(username,password):
-        data = ""
-        try:
-                BROWSER.open('https://www.deviantart.com/users/login', "ref=http%3A%2F%2Fwww.deviantart.com%2F&remember_me=1")
-                BROWSER.select_form(nr=1)
-                BROWSER.form['username'] = username
-                BROWSER.form['password'] = password
-                BROWSER.submit()
-                data = BROWSER.response().read()
-        except HTTPError, e:
-                print "HTTP Error:",e.code
-                sys.exit()
-        except URLError, e:
-                print "URL Error:",e.reason
-                sys.exit()
-        if re.search("The password you entered was incorrect",data):
+        BROWSER.open('https://www.deviantart.com/users/login?ref=http%3A%2F%2Fwww.deviantart.com%2F&remember_me=1')
+        form = BROWSER.get_forms()[1]
+        form['username'] = username
+        form['password'] = password
+        BROWSER.submit_form(form)
+
+        if BROWSER.find(text=re.compile("The password you entered was incorrect")):
                 print "Wrong password or username. Attempting to download anyway."
-        elif re.search("\"loggedIn\":true",data):
+        elif BROWSER.find(text=re.compile("\"loggedIn\":true")):
                 print "Logged in!"
         else:
                 print "Login unsuccessful. Attempting to download anyway."
 
-def get(url, file_name = None):
-        if file_name is not None and (overwrite == False) and (os.path.exists(file_name)):
+def daGet(url, file_name = None):
+        if file_name is not None and (overwrite == False) and (path_exists(file_name)):
                 print file_name+" exists - skipping"
                 return
-
-        remaining_tries = 3
-        while remaining_tries > 0:
-                try:
-                        f = BROWSER.open(url)
-                        output = f.read()
-                        break
-                except HTTPError, e:
-                        if verbose:
-                                print "HTTP Error: ", e.code , url
-                        remaining_tries -= 1
-                except URLError, e:
-                        if verbose:
-                                print "URL Error: ", e.reason , url
-                        remaining_tries -= 1
-                except IncompleteRead:
-                        if verbose:
-                                print "Incomplete read: ", url
-                        remaining_tries -= 1
+        #TODO Test robobrowser retries and exceptions
+        BROWSER.open(url)
 
         if file_name is None:
-                return str(output)
+                return str(BROWSER.parsed)
         else:
-                if (remaining_tries == 0) or (len(output) == 0):
-                        print "Reading file failed, skipping"
-                else:
-                        # Open our local file for writing
-                        local_file = open(file_name, "wb")
-                        #Write to our local file
-                        local_file.write(output)
-                        local_file.close()
+                # Open our local file for writing
+                local_file = open(file_name, "wb")
+                #Write to our local file
+                local_file.write(BROWSER.response.content)
+                local_file.close()
 
 def findLink(link):
-        html = get(link)
+        filelink = None
+        mature_error = False
+        BROWSER.open(link)
         # Full image link (via download link)
-        try:
-                req = BROWSER.click_link(text_regex="Download( (Image|File))?")
-                BROWSER.open(req)
-                filelink = BROWSER.geturl()
-                filename = os.path.basename(filelink)
-                return (filename, filelink)
-        except mechanize.LinkNotFoundError:
-                if verbose:
-                        print "Download link not found, falling back to preview image"
-                # Fallback 1: try meta
-                filesearch = re.search("<meta[^>]*name=\"og:image\"[^>]*content=\"([^\"]*)\"[^>]*>", html, re.DOTALL | re.IGNORECASE)
-                if not filesearch:
-                        # Fallback 2: try collect_rid, full
-                        filesearch = re.search("<img[^>]*collect_rid=\"[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"[^\"]*full[^\"]*\"[^>]*>", html, re.DOTALL | re.IGNORECASE)
-                if not filesearch:
-                        # Fallback 3: try collect_rid, normal
-                        filesearch = re.search("<img[^>]*collect_rid=\"[^\"]*\"[^>]*src=\"([^\"]*)\"[^>]*class=\"[^\"]*normal[^\"]*\"[^>]*>", html, re.DOTALL | re.IGNORECASE)
-
-                if filesearch:
-                        filelink = filesearch.group(1)
-                        if re.search("_by_[A-Za-z0-9-_]+-\w+\.\w+",filelink,re.IGNORECASE) or re.search("_by_[A-Za-z0-9-_]+\.\w+",filelink,re.IGNORECASE):
-                                filename = filelink.split("/")[-1].split("?")[0]
-                        else:
-                                filext = re.search("\.\w+$",filelink).group(0)
-                                filename = re.sub("-[0-9]+$","",link.split("/")[-1])+"_by_"+re.search("^http://([A-Za-z0-9-_]+)\.",link).group(1)+filext
-                        return (filename,filelink)
-                else:
-                        raise DagrException("all attemps to find a link failed")
-
-def handle_download_error(link):
-        print "Download error (",link,")"
-        if verbose:
-                traceback.print_exc(file=sys.stdout)
+        img_link = BROWSER.get_link(text=re.compile("Download( (Image|File))?"))
+        if img_link and img_link.get("href"):
+                BROWSER.follow_link(img_link)
+                filelink = BROWSER.url
         else:
-                print "Use verbose mode to display the error"
+                if verbose:
+                        print "Download link not found, falling back to direct image"
+                # Fallback 1: try meta (filtering blocked meta)
+                filesearch = BROWSER.find("meta", {"name":"og:image"})
+                if filesearch:
+                        filelink = filesearch['content']
+                        if basename(filelink).startswith("noentrythumb-"):
+                                filelink = None
+                                mature_error = True
+                if not filelink:
+                        # Fallback 2: try collect_rid, full
+                        filesearch = BROWSER.find("img", {"collect_rid":True, "class":re.compile(".*full")})
+                        if not filesearch:
+                        # Fallback 3: try collect_rid, normal
+                                filesearch = BROWSER.find("img", {"collect_rid":True, "class":re.compile(".*normal")})
+                        if filesearch:
+                                filelink = filesearch['src']
+
+                if not filelink:
+                        if mature_error:
+                                raise DagrException("probably a mature deviation")
+                        else:
+                                raise DagrException("all attemps to find a link failed")
+
+        filename = basename(filelink)
+        return (filename, filelink)
+
+def handle_download_error(link, e):
+        print "Download error (", link, ") : ", (e)
 
 def deviantGet(mode,deviant,reverse,testOnly=False):
         print "Ripping "+deviant+"'s "+mode+"..."
@@ -200,7 +148,7 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
                 else:
                         continue
 
-                html = get(url)
+                html = daGet(url)
                 prelim = re.findall(pat, html, re.IGNORECASE|re.DOTALL)
 
                 c = len(prelim)
@@ -245,15 +193,15 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
                         filename,filelink = findLink(link)
                 except (KeyboardInterrupt, SystemExit):
                         raise
-                except:
-                        handle_download_error(link)
+                except Exception as e:
+                        handle_download_error(link, e)
                         continue
 
                 if testOnly == False:
                         if (mode == "query") or (mode=="album") or (mode == "collection"):
-                                get(filelink,deviant+"/"+mode+"/"+modeArg+"/"+filename)
+                                daGet(filelink,deviant+"/"+mode+"/"+modeArg+"/"+filename)
                         else:
-                                get(filelink,deviant+"/"+mode+"/"+filename)
+                                daGet(filelink,deviant+"/"+mode+"/"+filename)
                 else:
                         print filelink
 
@@ -279,7 +227,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
 
         insideFolder = False
         #are we inside a gallery folder?
-        html = get('http://'+deviant+'.deviantart.com/'+strmode2+'/')
+        html = daGet('http://'+deviant+'.deviantart.com/'+strmode2+'/')
         if re.search(strmode2+"/\?set=.+&offset=",html,re.IGNORECASE|re.S):
                 insideFolder = True
                 folders = re.findall(strmode+":.+ label=\"[^\"]*\"", html, re.IGNORECASE)
@@ -289,7 +237,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
 
         i = 0
         while not insideFolder:
-                html = get('http://'+deviant+'.deviantart.com/'+strmode2+'/?offset='+str(i))
+                html = daGet('http://'+deviant+'.deviantart.com/'+strmode2+'/?offset='+str(i))
                 k = re.findall(strmode+":"+deviant+"/\d+\"\ +label=\"[^\"]*\"", html, re.IGNORECASE)
                 if k == []:
                         break
@@ -327,7 +275,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                 except:
                         continue
                 for i in range(0,MAX/24,24):
-                        html = get("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24))
+                        html = daGet("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24))
                         prelim = re.findall(pat, html, re.IGNORECASE)
                         if not prelim:
                                 break
@@ -359,15 +307,15 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                                 filename,filelink = findLink(link)
                         except (KeyboardInterrupt, SystemExit):
                                 raise
-                        except:
-                                handle_download_error(link)
+                        except Exception as e:
+                                handle_download_error(link, e)
                                 continue
 
                         if testOnly==False:
                                 if mode == "favs":
-                                        get(filelink, deviant+"/favs/"+label+"/"+filename)
+                                        daGet(filelink, deviant+"/favs/"+label+"/"+filename)
                                 elif mode == "gallery":
-                                        get(filelink, deviant+"/"+label+"/"+filename)
+                                        daGet(filelink, deviant+"/"+label+"/"+filename)
                         else:
                                 print filelink
 
@@ -376,43 +324,50 @@ def groupGet(mode,deviant,reverse,testOnly=False):
 
 def printHelp():
         print NAME+" v"+VERSION+" - deviantArt gallery ripper"
-        print "Usage: "+NAME+" [-u username] [-p password] [-hfgsv] [deviant]..."
+        print "Usage: "+NAME+" [-u username] [-p password] [-acfghoqrstv] [deviant]..."
         print "Example: "+NAME+" -u user -p 1234 -gsfv derp123 blah55"
         print "For extended help and other options, run "+NAME+" -h"
 
 def printHelpDetailed():
         printHelp()
-        print "Argument list:"
-        print "-u, --username=USERNAME"
-        print " your username (account must have \"Show Deviations with Mature Content\" enabled to download mature deviations)"
-        print "-p, --password=PASSWORD"
-        print " your password (account must have \"Show Deviations with Mature Content\" enabled to download mature deviations)"
-        print "-g, --gallery"
-        print " downloads entire gallery of selected deviants"
-        print "-s, --scraps"
-        print " downloads entire scraps gallery of selected deviants"
-        print "-f, --favs"
-        print " downloads all favourites of selected deviants"
-        print "-c, --collection=#####"
-        print " downloads all artwork from given favourites collection of selected deviants"
-        print "-a, --album=#####"
-        print " downloads specified album"
-        print "-q, --query"
-        print " downloads artwork matching specified query string"
-        print "-t, --test"
-        print " skips the actual download, just prints urls"
-        print "-h, --help"
-        print " prints usage message and exits (this text)"
-        print "-r, --reverse"
-        print " download oldest deviations first"
-        print "-o, --overwrite"
-        print " redownloads a file even if it already exists"
-        print "-x, --proxy=PROXY:PORT"
-        print " enables proxy mode (very unreliable)"
-        print "-b, --beautifulsoup"
-        print " enables BeautifulSoup HTML parser (for problematic pages)"
-        print "-v, --verbose"
-        print " outputs detailed information on downloads"
+        print """
+Argument list:
+-u, --username=USERNAME
+ your deviantArt account username
+-p, --password=PASSWORD
+ your deviantArt account password
+-g, --gallery
+ downloads entire gallery of selected deviants
+-s, --scraps
+ downloads entire scraps gallery of selected deviants
+-f, --favs
+ downloads all favourites of selected deviants
+-c, --collection=#####
+ downloads all artwork from given favourites collection of selected deviants
+-a, --album=#####
+ downloads specified album
+-q, --query=#####
+ downloads artwork matching specified query string
+-t, --test
+ skips the actual download, just prints urls
+-h, --help
+ prints usage message and exits (this text)
+-r, --reverse
+ download oldest deviations first
+-o, --overwrite
+ redownloads a file even if it already exists
+-v, --verbose
+ outputs detailed information on downloads
+
+Mature deviations:
+ to download mature deviations you must specify your deviantArt account, with \"Show Deviations with Mature Content\" option enabled
+
+Proxys:
+ you can also configure proxies by setting the environment variables HTTP_PROXY and HTTPS_PROXY
+
+ $ export HTTP_PROXY="http://10.10.1.10:3128"
+ $ export HTTPS_PROXY="http://10.10.1.10:1080"
+"""
 
 if __name__ == "__main__":
         if len(sys.argv) <= 1:
@@ -423,11 +378,9 @@ if __name__ == "__main__":
         BROWSER = None
         username = ""
         password = ""
-        proxy = None
         gallery = False
         verbose = False
         overwrite = False
-        beautifulsoup = False
         reverse = False
         scraps = False
         favs = False
@@ -440,7 +393,7 @@ if __name__ == "__main__":
         queryS = ""
 
         try:
-                options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:x:a:q:c:vfgshrtob', ['username=', 'password=', 'proxy=','album=', 'query=', 'collection=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite', 'beautifulsoup'])
+                options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:x:a:q:c:vfgshrtob', ['username=', 'password=', 'album=', 'query=', 'collection=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite'])
         except getopt.GetoptError, err:
                 print "Options error:",str(err)
                 sys.exit()
@@ -452,8 +405,6 @@ if __name__ == "__main__":
                         username = arg
                 elif opt in ('-p', '--password'):
                         password = arg
-                elif opt in ('-x', '--proxy'):
-                        proxy = arg
                 elif opt in ('-s', '--scraps'):
                         scraps = True
                 elif opt in ('-g', '--gallery'):
@@ -477,8 +428,6 @@ if __name__ == "__main__":
                         testOnly = True
                 elif opt in ('-o', '--overwrite'):
                         overwrite = True
-                elif opt in ('-b', '--beautifulsoup'):
-                        beautifulsoup = True
 
         print NAME+" v"+VERSION+" - deviantArt gallery ripper"
         if deviants == []:
@@ -488,22 +437,17 @@ if __name__ == "__main__":
                 print "Nothing to do. Quitting."
                 sys.exit()
 
-        # Set up mechanize
+        # Set up fake browser
         daSetBrowser()
 
         if username and password:
                 print "Attempting to log in to deviantArt..."
                 daLogin(username,password)
-        else:
-                if verbose:
-                        print "Mature deviations will not be available for download without logging in"
-        if proxy:
-                BROWSER.set_proxies({"http": proxy})
 
         for deviant in deviants:
                 group = False
                 try:
-                        deviant = re.search(r'<title>.[A-Za-z0-9-]*', get("http://"+deviant+".deviantart.com"),re.IGNORECASE).group(0)[7:]
+                        deviant = re.search(r'<title>.[A-Za-z0-9-]*', daGet("http://"+deviant+".deviantart.com"),re.IGNORECASE).group(0)[7:]
                         if re.match("#", deviant):
                                 group = True
                         deviant = re.sub('[^a-zA-Z0-9_-]+', '', deviant)
