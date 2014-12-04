@@ -23,9 +23,8 @@ class DagrException(Exception):
         def __str__(self):
                 return str(self.parameter)
 
-MAX = 1000000 # max deviations
-VERSION="0.60"
 NAME = basename(__file__)
+__version__="0.60"
 USERAGENTS = (
     'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/535.1 (KHTML, like Gecko) Chrome/14.0.835.202 Safari/535.1',
     'Mozilla/5.0 (Windows NT 6.1; WOW64; rv:7.0.1) Gecko/20100101',
@@ -36,6 +35,7 @@ USERAGENTS = (
     'Mozilla/5.0 (Windows; U; Windows NT 6.1; en-US) AppleWebKit/533.2 (KHTML, like Gecko) Chrome/6.0',
     'Mozilla/5.0 (Windows; U; Windows NT 6.1; pl; rv:1.9.1) Gecko/20090624 Firefox/3.5 (.NET CLR 3.5.30729)'
     )
+MAX_DEVIATIONS = 1000000 # max deviations
 
 def daMakedirs(directory):
         if not path_exists(directory):
@@ -129,7 +129,7 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
 
         #DEPTH 1
         pages = []
-        for i in range(0,int(MAX/24),24):
+        for i in range(0,int(MAX_DEVIATIONS/24),24):
                 html = ""
                 url = ""
 
@@ -274,7 +274,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                         label = re.search("label=\"([^\"]*)",folder,re.IGNORECASE).group(1)
                 except:
                         continue
-                for i in range(0,int(MAX/24),24):
+                for i in range(0,int(MAX_DEVIATIONS/24),24):
                         html = daGet("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24))
                         prelim = re.findall(pat, html, re.IGNORECASE)
                         if not prelim:
@@ -323,7 +323,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
         print(deviant + "'s " + strmode3 + " successfully ripped.")
 
 def printHelp():
-        print(NAME + " v" + VERSION + " - deviantArt gallery ripper")
+        print(NAME + " v" + __version__ + " - deviantArt gallery ripper")
         print("Usage: " + NAME + " [-u username] [-p password] [-acfghoqrstv] [deviant]...")
         print("Example: " + NAME + " -u user -p 1234 -gsfv derp123 blah55")
         print("For extended help and other options, run " + NAME + " -h")
@@ -429,7 +429,7 @@ if __name__ == "__main__":
                 elif opt in ('-o', '--overwrite'):
                         overwrite = True
 
-        print(NAME + " v" + VERSION + " - deviantArt gallery ripper")
+        print(NAME + " v" + __version__ + " - deviantArt gallery ripper")
         if deviants == []:
                 print("No deviants entered. Quitting.")
                 sys.exit()
