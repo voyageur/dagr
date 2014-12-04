@@ -8,6 +8,13 @@ Originally developed at http://lovecastle.org/dagr/ (now defunct), development n
 * a working Python installation (2.x or 3.x)
 * robobrowser module (https://github.com/jmcarp/robobrowser), and its dependencies
 
+### Gentoo installation
+dagr is available in the voyageur overlay (https://cafarelli.fr/cgi-bin/cgit.cgi/voyageur-overlay/).
+You can install it with layman:
+```
+# layman -a voyageur
+# emerge dagr
+```
 ### Current bugs and limitations
 These should be tracked here: https://github.com/voyageur/dagr/issues
 
