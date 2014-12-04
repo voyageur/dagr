@@ -21,7 +21,7 @@ class DagrException(Exception):
         def __init__(self, value):
                 self.parameter = value
         def __str__(self):
-                return repr(self.parameter)
+                return str(self.parameter)
 
 MAX = 1000000 # max deviations
 VERSION="0.60"
@@ -56,15 +56,15 @@ def daLogin(username,password):
         BROWSER.submit_form(form)
 
         if BROWSER.find(text=re.compile("The password you entered was incorrect")):
-                print "Wrong password or username. Attempting to download anyway."
+                print("Wrong password or username. Attempting to download anyway.")
         elif BROWSER.find(text=re.compile("\"loggedIn\":true")):
-                print "Logged in!"
+                print("Logged in!")
         else:
-                print "Login unsuccessful. Attempting to download anyway."
+                print("Login unsuccessful. Attempting to download anyway.")
 
 def daGet(url, file_name = None):
         if file_name is not None and (overwrite == False) and (path_exists(file_name)):
-                print file_name+" exists - skipping"
+                print(file_name + " exists - skipping")
                 return
         #TODO Test robobrowser retries and exceptions
         BROWSER.open(url)
@@ -89,7 +89,7 @@ def findLink(link):
                 filelink = BROWSER.url
         else:
                 if verbose:
-                        print "Download link not found, falling back to direct image"
+                        print("Download link not found, falling back to direct image")
                 # Fallback 1: try meta (filtering blocked meta)
                 filesearch = BROWSER.find("meta", {"name":"og:image"})
                 if filesearch:
@@ -116,10 +116,10 @@ def findLink(link):
         return (filename, filelink)
 
 def handle_download_error(link, e):
-        print "Download error (", link, ") : ", (e)
+        print("Download error (" + link + ") : " + str(e))
 
 def deviantGet(mode,deviant,reverse,testOnly=False):
-        print "Ripping "+deviant+"'s "+mode+"..."
+        print("Ripping " + deviant + "'s " + mode + "...")
         pat = "http://[a-zA-Z0-9_-]*\.deviantart\.com/art/[a-zA-Z0-9_-]*"
         modeArg = '_'
         if mode.find(':') != -1:
@@ -129,7 +129,7 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
 
         #DEPTH 1
         pages = []
-        for i in range(0,MAX/24,24):
+        for i in range(0,int(MAX/24),24):
                 html = ""
                 url = ""
 
@@ -163,30 +163,30 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
                 if len(done) >= 1 or c <= 0:
                         break
 
-                print deviant+"'s",mode,"page",str((i/24)+1),"crawled..."
+                print(deviant + "'s " +  mode + " page " + str(int((i/24)+1)) + " crawled...")
 
 
         if not reverse:
                 pages.reverse()
 
         if len(pages) == 0:
-                print deviant+"'s "+mode+" had no deviations."
+                print(deviant + "'s " + mode + " had no deviations.")
                 return 0
         else:
                 try:
                         daMakedirs(deviant+"/"+mode)
                         if (mode == "query") or (mode == "album") or (mode == "collection"):
-                            daMakedirs(deviant+"/"+mode+"/"+modeArg)
-                except Exception, e:
-                        print str(e)
-                print "Total deviations in "+deviant+"'s gallery found:",len(pages)
+                            daMakedirs(deviant + "/" + mode + "/" + modeArg)
+                except Exception as e:
+                        print(str(e))
+                print("Total deviations in " + deviant + "'s gallery found: " + str(len(pages)))
 
         ##DEPTH 2
         counter2 = 0
         for link in pages:
                 counter2 += 1
                 if verbose:
-                        print "Downloading",counter2,"of",len(pages),"( "+link+" )"
+                        print("Downloading " + str(counter2) + " of " + str(len(pages)) + " ( " + link + " )")
                 filename = ""
                 filelink = ""
                 try:
@@ -203,9 +203,9 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
                         else:
                                 daGet(filelink,deviant+"/"+mode+"/"+filename)
                 else:
-                        print filelink
+                        print(filelink)
 
-        print deviant+"'s gallery successfully ripped."
+        print(deviant + "'s gallery successfully ripped.")
 
 
 
@@ -219,9 +219,9 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                 strmode2 = "gallery"
                 strmode3 = "gallery"
         else:
-                print "?"
+                print("?")
                 sys.exit()
-        print "Ripping "+deviant+"'s",strmode2+"..."
+        print("Ripping " + deviant + "'s " + strmode2 + "...")
 
         folders = []
 
@@ -248,7 +248,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                         else:
                                 folders+=k
                 if verbose:
-                        print "Gallery page",(i/10)+1,"crawled..."
+                        print("Gallery page " + str(int((i/10) + 1)) + " crawled...")
                 if flag:
                         break
                 i += 10
@@ -257,10 +257,10 @@ def groupGet(mode,deviant,reverse,testOnly=False):
         folders = list(set(folders))
 
         if len(folders) == 0:
-                print deviant+"'s",strmode3,"is empty."
+                print(deviant + "'s " +  strmode3 + " is empty.")
                 return 0
         else:
-                print "Total folders in "+deviant+"'s",strmode3,"found:",len(folders)
+                print("Total folders in " + deviant + "'s " + strmode3 + " found: " + str(len(folders)))
 
         if reverse:
                 folders.reverse()
@@ -274,7 +274,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                         label = re.search("label=\"([^\"]*)",folder,re.IGNORECASE).group(1)
                 except:
                         continue
-                for i in range(0,MAX/24,24):
+                for i in range(0,int(MAX/24),24):
                         html = daGet("http://" + deviant.lower() + ".deviantart.com/" + strmode2 + "/?set=" + folderid + "&offset=" + str(i - 24))
                         prelim = re.findall(pat, html, re.IGNORECASE)
                         if not prelim:
@@ -284,7 +284,7 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                                 if p not in pages:
                                         pages.append(p)
                         if verbose:
-                                print "Page",(i/24)+1,"in folder",label,"crawled..."
+                                print("Page " + str(int((i/24) + 1)) + " in folder " + label + " crawled...")
 
                 if not reverse:
                         pages.reverse()
@@ -294,13 +294,13 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                                 daMakedirs(deviant+"/favs/"+label)
                         elif mode == "gallery":
                                 daMakedirs(deviant+"/"+label)
-                except Exception, err:
-                        print err
+                except Exception as err:
+                        print(err)
                 counter = 0
                 for link in pages:
                         counter += 1
                         if verbose:
-                                print "Downloading",counter,"of",len(pages),"( "+link+" )"
+                                print("Downloading " +  str(counter) +  " of " + str(len(pages)) +  " ( " + link + " )")
                         filename = ""
                         filelink = ""
                         try:
@@ -317,20 +317,20 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                                 elif mode == "gallery":
                                         daGet(filelink, deviant+"/"+label+"/"+filename)
                         else:
-                                print filelink
+                                print(filelink)
 
 
-        print deviant+"'s",strmode3,"successfully ripped."
+        print(deviant + "'s " + strmode3 + " successfully ripped.")
 
 def printHelp():
-        print NAME+" v"+VERSION+" - deviantArt gallery ripper"
-        print "Usage: "+NAME+" [-u username] [-p password] [-acfghoqrstv] [deviant]..."
-        print "Example: "+NAME+" -u user -p 1234 -gsfv derp123 blah55"
-        print "For extended help and other options, run "+NAME+" -h"
+        print(NAME + " v" + VERSION + " - deviantArt gallery ripper")
+        print("Usage: " + NAME + " [-u username] [-p password] [-acfghoqrstv] [deviant]...")
+        print("Example: " + NAME + " -u user -p 1234 -gsfv derp123 blah55")
+        print("For extended help and other options, run " + NAME + " -h")
 
 def printHelpDetailed():
         printHelp()
-        print """
+        print("""
 Argument list:
 -u, --username=USERNAME
  your deviantArt account username
@@ -367,7 +367,7 @@ Proxys:
 
  $ export HTTP_PROXY="http://10.10.1.10:3128"
  $ export HTTPS_PROXY="http://10.10.1.10:1080"
-"""
+""")
 
 if __name__ == "__main__":
         if len(sys.argv) <= 1:
@@ -394,8 +394,8 @@ if __name__ == "__main__":
 
         try:
                 options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:x:a:q:c:vfgshrtob', ['username=', 'password=', 'album=', 'query=', 'collection=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite'])
-        except getopt.GetoptError, err:
-                print "Options error:",str(err)
+        except getopt.GetoptError as err:
+                print("Options error: " + str(err))
                 sys.exit()
         for opt, arg in options:
                 if opt in ('-h', '--help'):
@@ -429,19 +429,19 @@ if __name__ == "__main__":
                 elif opt in ('-o', '--overwrite'):
                         overwrite = True
 
-        print NAME+" v"+VERSION+" - deviantArt gallery ripper"
+        print(NAME + " v" + VERSION + " - deviantArt gallery ripper")
         if deviants == []:
-                print "No deviants entered. Quitting."
+                print("No deviants entered. Quitting.")
                 sys.exit()
         if not gallery and not scraps and not favs and not collection and not album and not query:
-                print "Nothing to do. Quitting."
+                print("Nothing to do. Quitting.")
                 sys.exit()
 
         # Set up fake browser
         daSetBrowser()
 
         if username and password:
-                print "Attempting to log in to deviantArt..."
+                print("Attempting to log in to deviantArt...")
                 daLogin(username,password)
 
         for deviant in deviants:
@@ -452,27 +452,27 @@ if __name__ == "__main__":
                                 group = True
                         deviant = re.sub('[^a-zA-Z0-9_-]+', '', deviant)
                 except:
-                        print "Deviant",deviant,"not found or deactivated!"
+                        print("Deviant " + deviant + "not found or deactivated!")
                         continue
                 if group:
-                        print "Current group:",deviant
+                        print("Current group: " + deviant)
                 else:
-                        print "Current deviant:",deviant
+                        print("Current deviant: " + deviant)
                 try:
                         daMakedirs(deviant)
-                except Exception, err:
-                        print err
+                except Exception as err:
+                        print(err)
 
                 args = (deviant,reverse,testOnly)
                 if group:
                         if scraps:
-                                print "Groups have no scraps gallery..."
+                                print("Groups have no scraps gallery...")
                         if gallery:
                                 groupGet("gallery",*args)
                         if favs:
                                 groupGet("favs",*args)
                         else:
-                                print "Option not supported in groups"
+                                print("Option not supported in groups")
                 else:
                         if gallery:
                                 deviantGet("gallery",*args)
@@ -486,6 +486,6 @@ if __name__ == "__main__":
                                 deviantGet("album:"+albumId,*args)
                         if query:
                                 deviantGet("query:"+queryS,*args)
-        print "Job complete."
+        print("Job complete.")
 
 # vim: set tabstop=8 softtabstop=8 shiftwidth=8 expandtab:
