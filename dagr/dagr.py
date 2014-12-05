@@ -23,6 +23,7 @@ class DagrException(Exception):
         def __str__(self):
                 return str(self.parameter)
 
+# Constants
 NAME = basename(__file__)
 __version__="0.60"
 USERAGENTS = (
@@ -37,6 +38,15 @@ USERAGENTS = (
     )
 MAX_DEVIATIONS = 1000000 # max deviations
 
+# Globals
+BROWSER = None
+username = ""
+password = ""
+overwrite = False
+reverse = False
+testOnly = False
+verbose = False
+
 def daMakedirs(directory):
         if not path_exists(directory):
                 makedirs(directory)
@@ -48,7 +58,7 @@ def daSetBrowser():
 
         BROWSER = RoboBrowser(history=False, session=session, tries=3, user_agent=random.choice(USERAGENTS))
 
-def daLogin(username,password):
+def daLogin():
         BROWSER.open('https://www.deviantart.com/users/login?ref=http%3A%2F%2Fwww.deviantart.com%2F&remember_me=1')
         form = BROWSER.get_forms()[1]
         form['username'] = username
@@ -118,7 +128,7 @@ def findLink(link):
 def handle_download_error(link, e):
         print("Download error (" + link + ") : " + str(e))
 
-def deviantGet(mode,deviant,reverse,testOnly=False):
+def deviantGet(mode, deviant):
         print("Ripping " + deviant + "'s " + mode + "...")
         pat = "http://[a-zA-Z0-9_-]*\.deviantart\.com/art/[a-zA-Z0-9_-]*"
         modeArg = '_'
@@ -165,7 +175,6 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
 
                 print(deviant + "'s " +  mode + " page " + str(int((i/24)+1)) + " crawled...")
 
-
         if not reverse:
                 pages.reverse()
 
@@ -207,9 +216,7 @@ def deviantGet(mode,deviant,reverse,testOnly=False):
 
         print(deviant + "'s gallery successfully ripped.")
 
-
-
-def groupGet(mode,deviant,reverse,testOnly=False):
+def groupGet(mode, deviant):
         if mode == "favs":
                 strmode  = "favby"
                 strmode2 = "favourites"
@@ -265,7 +272,6 @@ def groupGet(mode,deviant,reverse,testOnly=False):
         if reverse:
                 folders.reverse()
 
-
         pat = "http:\\/\\/[a-zA-Z0-9_-]*\.deviantart\.com\\/art\\/[a-zA-Z0-9_-]*"
         pages = []
         for folder in folders:
@@ -319,7 +325,6 @@ def groupGet(mode,deviant,reverse,testOnly=False):
                         else:
                                 print(filelink)
 
-
         print(deviant + "'s " + strmode3 + " successfully ripped.")
 
 def printHelp():
@@ -369,31 +374,18 @@ Proxys:
  $ export HTTPS_PROXY="http://10.10.1.10:1080"
 """)
 
-if __name__ == "__main__":
+def main():
+        global username, password, overwrite, reverse, testOnly, verbose
+
+        gallery = scraps = favs = False
+        collection = album = query = ""
+
         if len(sys.argv) <= 1:
                 printHelp()
                 sys.exit()
 
-        #defaults
-        BROWSER = None
-        username = ""
-        password = ""
-        gallery = False
-        verbose = False
-        overwrite = False
-        reverse = False
-        scraps = False
-        favs = False
-        collection = False
-        collectionS = ""
-        testOnly = False
-        album = False
-        albumId = -1
-        query = False
-        queryS = ""
-
         try:
-                options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:x:a:q:c:vfgshrtob', ['username=', 'password=', 'album=', 'query=', 'collection=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite'])
+                options, deviants = getopt.gnu_getopt(sys.argv[1:], 'u:p:a:q:c:vfgshrto', ['username=', 'password=', 'album=', 'query=', 'collection=', 'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse', 'test', 'overwrite'])
         except getopt.GetoptError as err:
                 print("Options error: " + str(err))
                 sys.exit()
@@ -414,16 +406,13 @@ if __name__ == "__main__":
                 elif opt in ('-f', '--favs'):
                         favs = True
                 elif opt in ('-c', '--collection'):
-                        collection = True
-                        collectionS = arg.strip().strip('"')
+                        collection = arg.strip().strip('"')
                 elif opt in ('-v', '--verbose'):
                         verbose = True
                 elif opt in ('-a', '--album'):
-                        album = True
-                        albumId = arg.strip()
+                        album = arg.strip()
                 elif opt in ('-q', '--query'):
-                        query = True
-                        queryS = arg.strip().strip('"')
+                        query = arg.strip().strip('"')
                 elif opt in ('-t', '--test'):
                         testOnly = True
                 elif opt in ('-o', '--overwrite'):
@@ -442,7 +431,7 @@ if __name__ == "__main__":
 
         if username and password:
                 print("Attempting to log in to deviantArt...")
-                daLogin(username,password)
+                daLogin()
 
         for deviant in deviants:
                 group = False
@@ -463,29 +452,30 @@ if __name__ == "__main__":
                 except Exception as err:
                         print(err)
 
-                args = (deviant,reverse,testOnly)
                 if group:
                         if scraps:
                                 print("Groups have no scraps gallery...")
                         if gallery:
-                                groupGet("gallery",*args)
+                                groupGet("gallery",deviant)
                         if favs:
-                                groupGet("favs",*args)
+                                groupGet("favs",deviant)
                         else:
                                 print("Option not supported in groups")
                 else:
                         if gallery:
-                                deviantGet("gallery",*args)
+                                deviantGet("gallery",deviant)
                         if scraps:
-                                deviantGet("scraps",*args)
+                                deviantGet("scraps",deviant)
                         if favs:
-                                deviantGet("favs",*args)
+                                deviantGet("favs",deviant)
                         if collection:
-                                deviantGet("collection:"+collectionS,*args)
+                                deviantGet("collection:"+collection,deviant)
                         if album:
-                                deviantGet("album:"+albumId,*args)
+                                deviantGet("album:"+album,deviant)
                         if query:
-                                deviantGet("query:"+queryS,*args)
+                                deviantGet("query:"+query,deviant)
         print("Job complete.")
 
+if __name__ == "__main__":
+        main()
 # vim: set tabstop=8 softtabstop=8 shiftwidth=8 expandtab:
