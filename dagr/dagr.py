@@ -38,8 +38,7 @@ USERAGENTS = (
     )
 MAX_DEVIATIONS = 1000000 # max deviations
 
-# Globals
-BROWSER = None
+# Configuration
 username = ""
 password = ""
 overwrite = False
@@ -47,27 +46,31 @@ reverse = False
 testOnly = False
 verbose = False
 
+# Globals
+browser = None
+errors_count = dict()
+
 def daMakedirs(directory):
         if not path_exists(directory):
                 makedirs(directory)
 
 def daSetBrowser():
-        global BROWSER
+        global browser
         session = req_session()
         session.headers.update({'Referer': 'http://www.deviantart.com/'})
 
-        BROWSER = RoboBrowser(history=False, session=session, tries=3, user_agent=random.choice(USERAGENTS))
+        browser = RoboBrowser(history=False, session=session, tries=3, user_agent=random.choice(USERAGENTS))
 
 def daLogin():
-        BROWSER.open('https://www.deviantart.com/users/login?ref=http%3A%2F%2Fwww.deviantart.com%2F&remember_me=1')
-        form = BROWSER.get_forms()[1]
+        browser.open('https://www.deviantart.com/users/login?ref=http%3A%2F%2Fwww.deviantart.com%2F&remember_me=1')
+        form = browser.get_forms()[1]
         form['username'] = username
         form['password'] = password
-        BROWSER.submit_form(form)
+        browser.submit_form(form)
 
-        if BROWSER.find(text=re.compile("The password you entered was incorrect")):
+        if browser.find(text=re.compile("The password you entered was incorrect")):
                 print("Wrong password or username. Attempting to download anyway.")
-        elif BROWSER.find(text=re.compile("\"loggedIn\":true")):
+        elif browser.find(text=re.compile("\"loggedIn\":true")):
                 print("Logged in!")
         else:
                 print("Login unsuccessful. Attempting to download anyway.")
@@ -77,31 +80,31 @@ def daGet(url, file_name = None):
                 print(file_name + " exists - skipping")
                 return
         #TODO Test robobrowser retries and exceptions
-        BROWSER.open(url)
+        browser.open(url)
 
         if file_name is None:
-                return str(BROWSER.parsed)
+                return str(browser.parsed)
         else:
                 # Open our local file for writing
                 local_file = open(file_name, "wb")
                 #Write to our local file
-                local_file.write(BROWSER.response.content)
+                local_file.write(browser.response.content)
                 local_file.close()
 
 def findLink(link):
         filelink = None
         mature_error = False
-        BROWSER.open(link)
+        browser.open(link)
         # Full image link (via download link)
-        img_link = BROWSER.get_link(text=re.compile("Download( (Image|File))?"))
+        img_link = browser.get_link(text=re.compile("Download( (Image|File))?"))
         if img_link and img_link.get("href"):
-                BROWSER.follow_link(img_link)
-                filelink = BROWSER.url
+                browser.follow_link(img_link)
+                filelink = browser.url
         else:
                 if verbose:
                         print("Download link not found, falling back to direct image")
                 # Fallback 1: try meta (filtering blocked meta)
-                filesearch = BROWSER.find("meta", {"name":"og:image"})
+                filesearch = browser.find("meta", {"name":"og:image"})
                 if filesearch:
                         filelink = filesearch['content']
                         if basename(filelink).startswith("noentrythumb-"):
@@ -109,10 +112,10 @@ def findLink(link):
                                 mature_error = True
                 if not filelink:
                         # Fallback 2: try collect_rid, full
-                        filesearch = BROWSER.find("img", {"collect_rid":True, "class":re.compile(".*full")})
+                        filesearch = browser.find("img", {"collect_rid":True, "class":re.compile(".*full")})
                         if not filesearch:
                         # Fallback 3: try collect_rid, normal
-                                filesearch = BROWSER.find("img", {"collect_rid":True, "class":re.compile(".*normal")})
+                                filesearch = browser.find("img", {"collect_rid":True, "class":re.compile(".*normal")})
                         if filesearch:
                                 filelink = filesearch['src']
 
@@ -126,7 +129,13 @@ def findLink(link):
         return (filename, filelink)
 
 def handle_download_error(link, e):
-        print("Download error (" + link + ") : " + str(e))
+        global errors_count
+        error_string = str(e)
+        print("Download error (" + link + ") : " + error_string)
+        if error_string in errors_count:
+                errors_count[error_string] += 1
+        else:
+                errors_count[error_string] = 1
 
 def deviantGet(mode, deviant):
         print("Ripping " + deviant + "'s " + mode + "...")
@@ -475,6 +484,11 @@ def main():
                         if query:
                                 deviantGet("query:"+query,deviant)
         print("Job complete.")
+
+        if len(errors_count):
+                print("Download errors count:")
+                for error, count in errors_count.iteritems():
+                        print("* " + error + " : " + str(count))
 
 if __name__ == "__main__":
         main()
