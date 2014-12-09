@@ -4,6 +4,8 @@ dagr.py (deviantArt gallery ripper) is a deviantArt image downloader script writ
 It can download every image (deviation) in a gallery, as well as every favorited deviation a deviant may have.  
 Originally developed at http://lovecastle.org/dagr/ (now defunct), development now continues on Github
 
+Changelog is available [here](CHANGELOG.md)
+
 ### Dependencies
 * a working Python installation (2.x or 3.x)
 * robobrowser module (https://github.com/jmcarp/robobrowser), and its dependencies
