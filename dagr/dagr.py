@@ -152,7 +152,7 @@ class Dagr:
             print("Download link not found, falling back to direct image")
 
         # Fallback 1: try meta (filtering blocked meta)
-        filesearch = self.browser.find("meta", {"name": "og:image"})
+        filesearch = self.browser.find("meta", {"property": "og:image"})
         if filesearch:
             filelink = filesearch['content']
             if basename(filelink).startswith("noentrythumb-"):
