@@ -191,7 +191,7 @@ class Dagr:
 
     def deviant_get(self, mode):
         print("Ripping " + self.deviant + "'s " + mode + "...")
-        pat = "http://[a-zA-Z0-9_-]*\.deviantart\.com/art/[a-zA-Z0-9_-]*"
+        pat = r"http://[a-zA-Z0-9_-]*\.deviantart\.com/art/[a-zA-Z0-9_-]*"
         mode_arg = '_'
         if mode.find(':') != -1:
             mode = mode.split(':', 1)
@@ -219,7 +219,12 @@ class Dagr:
             else:
                 continue
 
-            html = self.get(url)
+            try:
+                html = self.get(url)
+            except DagrException:
+                print("Could not find " + self.deviant + "'s " + mode)
+                return
+
             prelim = re.findall(pat, html, re.IGNORECASE | re.DOTALL)
 
             c = len(prelim)
@@ -301,13 +306,13 @@ class Dagr:
 
         folders = []
 
-        insideFolder = False
+        inside_folder = False
         # are we inside a gallery folder?
         html = self.get('http://' + self.deviant +
                         '.deviantart.com/' + strmode2 + '/')
-        if re.search(strmode2 + "/\?set=.+&offset=", html,
+        if re.search(strmode2 + r"/\?set=.+&offset=", html,
                      re.IGNORECASE | re.S):
-            insideFolder = True
+            inside_folder = True
             folders = re.findall(strmode + ":.+ label=\"[^\"]*\"",
                                  html, re.IGNORECASE)
 
@@ -315,11 +320,11 @@ class Dagr:
         folders = list(set(folders))
 
         i = 0
-        while not insideFolder:
+        while not inside_folder:
             html = self.get('http://' + self.deviant + '.deviantart.com/' +
                             strmode2 + '/?offset=' + str(i))
             k = re.findall(strmode + ":" + self.deviant +
-                           "/\d+\"\ +label=\"[^\"]*\"", html, re.IGNORECASE)
+                           r"/\d+\"\ +label=\"[^\"]*\"", html, re.IGNORECASE)
             if k == []:
                 break
             flag = False
@@ -347,8 +352,8 @@ class Dagr:
         if self.reverse:
             folders.reverse()
 
-        pat = ("http:\\/\\/[a-zA-Z0-9_-]*\.deviantart\.com"
-               "\\/art\\/[a-zA-Z0-9_-]*")
+        pat = (r"http:\\/\\/[a-zA-Z0-9_-]*\.deviantart\.com"
+               r"\\/art\\/[a-zA-Z0-9_-]*")
         pages = []
         for folder in folders:
             try:
@@ -380,8 +385,8 @@ class Dagr:
                     da_make_dirs(self.deviant + "/favs/" + label)
                 elif mode == "gallery":
                     da_make_dirs(self.deviant + "/" + label)
-            except Exception as err:
-                print(err)
+            except OSError as mkdir_error:
+                print(str(mkdir_error))
             counter = 0
             for link in pages:
                 counter += 1
@@ -434,21 +439,21 @@ your deviantArt account username
 -p, --password=PASSWORD
 your deviantArt account password
 -g, --gallery
-downloads entire gallery of selected deviants
+downloads entire gallery
 -s, --scraps
-downloads entire scraps gallery of selected deviants
+downloads entire scraps gallery
 -f, --favs
-downloads all favourites of selected deviants
+downloads all favourites
 -c, --collection=#####
-downloads all artwork from given favourites collection of selected deviants
+downloads specified favourites collection
 -a, --album=#####
 downloads specified album
 -q, --query=#####
 downloads artwork matching specified query string
 -t, --test
-skips the actual download, just prints urls
+skips the actual downloads, just prints URLs
 -h, --help
-prints usage message and exits (this text)
+prints help and exits (this text)
 -r, --reverse
 download oldest deviations first
 -o, --overwrite
@@ -460,7 +465,7 @@ Mature deviations:
  to download mature deviations you must specify your deviantArt account,
  with \"Show Deviations with Mature Content\" option enabled
 
-Proxys:
+Proxies:
  you can also configure proxies by setting the environment variables
  HTTP_PROXY and HTTPS_PROXY
 
@@ -520,10 +525,10 @@ def main():
 
     print(Dagr.NAME + " v" + Dagr.__version__ + " - deviantArt gallery ripper")
     if deviants == []:
-        print("No deviants entered. Quitting.")
+        print("No deviants entered. Exiting.")
         sys.exit()
     if not any([gallery, scraps, favs, collection, album, query]):
-        print("Nothing to do. Quitting.")
+        print("Nothing to do. Exiting.")
         sys.exit()
 
     # Only start when needed
@@ -548,19 +553,18 @@ def main():
             print("Current deviant: " + deviant)
         try:
             da_make_dirs(deviant)
-        except Exception as err:
-            print(err)
+        except OSError as mkdir_error:
+            print(str(mkdir_error))
 
         ripper.deviant = deviant
         if group:
-            if scraps:
-                print("Groups have no scraps gallery...")
             if gallery:
                 ripper.group_get("gallery")
             if favs:
                 ripper.group_get("favs")
-            else:
-                print("Option not supported in groups")
+            if any([scraps,collection,album,query]):
+                print("Unsupported modes for groups were ignored")
+                # TODO: support other queries / merge code
         else:
             if gallery:
                 ripper.deviant_get("gallery")

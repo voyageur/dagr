@@ -4,6 +4,7 @@
 #### TBD
 - PEP8 cleanups
 - Fix favs download
+- Catch failed HTTP requests
 
 ## [0.61] (https://github.com/voyageur/dagr/tree/0.61)
 #### 11/04/2017
