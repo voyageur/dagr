@@ -362,8 +362,8 @@ class Dagr:
         def print_errors(self):
                 if len(self.errors_count):
                         print("Download errors count:")
-                        for error, count in self.errors_count.iteritems():
-                                print("* " + error + " : " + str(count))
+                        for error in self.errors_count:
+                                print("* " + error + " : " + str(self.errors_count[error]))
 
 def print_help():
         print(Dagr.NAME + " v" + Dagr.__version__ + " - deviantArt gallery ripper")
