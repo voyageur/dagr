@@ -30,5 +30,5 @@ setup(
     url='https://github.com/voyageur/dagr',
     scripts=['dagr/dagr.py'],
     packages=(),
-    install_requires=["robobrowser == 0.5.1"],
+    install_requires=["robobrowser == 0.5.3"],
 )
