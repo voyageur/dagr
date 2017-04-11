@@ -32,7 +32,7 @@ class Dagr:
         """deviantArt gallery ripper class"""
 
         NAME = basename(__file__)
-        __version__="0.60"
+        __version__="0.61"
         MAX_DEVIATIONS = 1000000 # max deviations
 
         def __init__(self):

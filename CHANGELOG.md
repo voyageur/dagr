@@ -1,7 +1,7 @@
 # Changelog
 
 ## [0.61] (https://github.com/voyageur/dagr/tree/0.61)
-#### TBD
+#### 11/04/2017
 - Display (basic) errors summary
 - Convert code to class, parameters passing cleanup
 
