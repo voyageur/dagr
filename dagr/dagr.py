@@ -18,7 +18,7 @@ from os.path import basename, exists as path_exists
 from random import choice
 
 from robobrowser import RoboBrowser
-from requests import session as req_session
+from requests import codes as req_codes, session as req_session
 
 
 # Helper functions
@@ -121,8 +121,11 @@ class Dagr:
         if file_name and not self.overwrite and (path_exists(file_name)):
             print(file_name + " exists - skipping")
             return
-        # TODO Test robobrowser retries and exceptions
         self.browser.open(url)
+
+        if self.browser.response.status_code != req_codes.ok:
+            raise DagrException("incorrect status code: " +
+                                str(self.browser.response.status_code))
 
         if file_name is None:
             return str(self.browser.parsed)
@@ -241,14 +244,15 @@ class Dagr:
 
         if len(pages) == 0:
             print(self.deviant + "'s " + mode + " had no deviations.")
-            return 0
+            return
         else:
             try:
                 da_make_dirs(self.deviant + "/" + mode)
                 if mode in ["query", "album", "collection"]:
                     da_make_dirs(self.deviant + "/" + mode + "/" + mode_arg)
-            except Exception as e:
-                print(str(e))
+            except OSError as mkdir_error:
+                print(str(mkdir_error))
+                return
             print("Total deviations in " + self.deviant +
                   "'s gallery found: " + str(len(pages)))
 
@@ -265,8 +269,8 @@ class Dagr:
                 filename, filelink = self.find_link(link)
             except (KeyboardInterrupt, SystemExit):
                 raise
-            except Exception as e:
-                self.handle_download_error(link, e)
+            except DagrException as link_error:
+                self.handle_download_error(link, link_error)
                 continue
 
             if not self.test_only:
@@ -335,7 +339,7 @@ class Dagr:
 
         if len(folders) == 0:
             print(self.deviant + "'s " + strmode3 + " is empty.")
-            return 0
+            return
         else:
             print("Total folders in " + self.deviant + "'s " +
                   strmode3 + " found: " + str(len(folders)))
@@ -535,7 +539,7 @@ def main():
             if re.match("#", deviant):
                 group = True
             deviant = re.sub('[^a-zA-Z0-9_-]+', '', deviant)
-        except:
+        except DagrException:
             print("Deviant " + deviant + " not found or deactivated!")
             continue
         if group:
