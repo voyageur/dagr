@@ -10,7 +10,7 @@ def find_version(fname):
     """
     version = ''
     with open(fname, 'r') as fp:
-        reg = re.compile(r'__version__ *= *[\'"]([^\'"]*)[\'"]')
+        reg = re.compile(r'\s*__version__\s*=\s*[\'"]([^\'"]*)[\'"]')
         for line in fp:
             m = reg.match(line)
             if m:
