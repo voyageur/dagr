@@ -85,6 +85,7 @@ class Dagr:
         )
         session = req_session()
         session.headers.update({'Referer': 'http://www.deviantart.com/'})
+        session.cookies.update({'agegate_state': '1'})
 
         # Try to use lxml parser if available
         # https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
