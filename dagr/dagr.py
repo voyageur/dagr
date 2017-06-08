@@ -13,8 +13,8 @@
 import re
 import sys
 from getopt import gnu_getopt, GetoptError
-from os import makedirs
-from os.path import basename, exists as path_exists
+from os import getcwd, makedirs
+from os.path import abspath, basename, exists as path_exists, expanduser
 from random import choice
 
 from robobrowser import RoboBrowser
@@ -50,6 +50,7 @@ class Dagr:
         self.errors_count = dict()
 
         # Configuration
+        self.directory = getcwd() + "/"
         self.username = ""
         self.password = ""
         self.overwrite = False
@@ -132,7 +133,7 @@ class Dagr:
             return str(self.browser.parsed)
         else:
             # Open our local file for writing
-            local_file = open(file_name, "wb")
+            local_file = open(self.directory + file_name, "wb")
             # Write to our local file
             local_file.write(self.browser.response.content)
             local_file.close()
@@ -253,9 +254,10 @@ class Dagr:
             return
         else:
             try:
-                da_make_dirs(self.deviant + "/" + mode)
+                da_make_dirs(self.directory + self.deviant + "/" + mode)
                 if mode in ["query", "album", "collection"]:
-                    da_make_dirs(self.deviant + "/" + mode + "/" + mode_arg)
+                    da_make_dirs(self.directory + self.deviant + "/" +
+                                 mode + "/" + mode_arg)
             except OSError as mkdir_error:
                 print(str(mkdir_error))
                 return
@@ -383,9 +385,10 @@ class Dagr:
 
             try:
                 if mode == "favs":
-                    da_make_dirs(self.deviant + "/favs/" + label)
+                    da_make_dirs(self.directory + self.deviant +
+                                 "/favs/" + label)
                 elif mode == "gallery":
-                    da_make_dirs(self.deviant + "/" + label)
+                    da_make_dirs(self.directory + self.deviant + "/" + label)
             except OSError as mkdir_error:
                 print(str(mkdir_error))
             counter = 0
@@ -426,7 +429,8 @@ class Dagr:
 def print_help():
     print(Dagr.NAME + " v" + Dagr.__version__ + " - deviantArt gallery ripper")
     print("Usage: " + Dagr.NAME +
-          " [-u username] [-p password] [-acfghoqrstv] [deviant]...")
+          " [-d directory] [-u username] [-p password] " +
+          "[-acfghoqrstv] [deviant]...")
     print("Example: " + Dagr.NAME + " -u user -p 1234 -gsfv derp123 blah55")
     print("For extended help and other options, run " + Dagr.NAME + " -h")
 
@@ -435,6 +439,8 @@ def print_help_detailed():
     print_help()
     print("""
 Argument list:
+-d, --directory=PATH
+directory to save images to, default is current one
 -u, --username=USERNAME
 your deviantArt account username
 -p, --password=PASSWORD
@@ -483,10 +489,11 @@ def main():
         print_help()
         sys.exit()
 
-    g_opts = "u:p:a:q:c:vfgshrto"
-    g_long_opts = ['username=', 'password=', 'album=', 'query=', 'collection=',
-                   'verbose', 'favs', 'gallery', 'scraps', 'help', 'reverse',
-                   'test', 'overwrite']
+    g_opts = "d:u:p:a:q:c:vfgshrto"
+    g_long_opts = ['directory=', 'username=', 'password=',
+                   'album=', 'query=', 'collection=',
+                   'verbose', 'favs', 'gallery', 'scraps',
+                   'help', 'reverse', 'test', 'overwrite']
     try:
         options, deviants = gnu_getopt(sys.argv[1:], g_opts, g_long_opts)
     except GetoptError as err:
@@ -499,6 +506,8 @@ def main():
         if opt in ('-h', '--help'):
             print_help_detailed()
             sys.exit()
+        elif opt in ('-d', '--directory'):
+            ripper.directory = abspath(expanduser(arg)) + "/"
         elif opt in ('-u', '--username'):
             ripper.username = arg
         elif opt in ('-p', '--password'):
@@ -553,7 +562,7 @@ def main():
         else:
             print("Current deviant: " + deviant)
         try:
-            da_make_dirs(deviant)
+            da_make_dirs(ripper.directory + deviant)
         except OSError as mkdir_error:
             print(str(mkdir_error))
 
@@ -563,7 +572,7 @@ def main():
                 ripper.group_get("gallery")
             if favs:
                 ripper.group_get("favs")
-            if any([scraps,collection,album,query]):
+            if any([scraps, collection, album, query]):
                 print("Unsupported modes for groups were ignored")
                 # TODO: support other queries / merge code
         else:
