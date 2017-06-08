@@ -183,8 +183,8 @@ class Dagr:
         filename = basename(filelink)
         return (filename, filelink)
 
-    def handle_download_error(self, link, e):
-        error_string = str(e)
+    def handle_download_error(self, link, link_error):
+        error_string = str(link_error)
         print("Download error (" + link + ") : " + error_string)
         if error_string in self.errors_count:
             self.errors_count[error_string] += 1
@@ -249,7 +249,7 @@ class Dagr:
         if not self.reverse:
             pages.reverse()
 
-        if len(pages) == 0:
+        if not pages:
             print(self.deviant + "'s " + mode + " had no deviations.")
             return
         else:
@@ -345,7 +345,7 @@ class Dagr:
         # no repeats
         folders = list(set(folders))
 
-        if len(folders) == 0:
+        if not folders:
             print(self.deviant + "'s " + strmode3 + " is empty.")
             return
         else:
@@ -403,8 +403,8 @@ class Dagr:
                     filename, filelink = self.find_link(link)
                 except (KeyboardInterrupt, SystemExit):
                     raise
-                except Exception as e:
-                    self.handle_download_error(link, e)
+                except Exception as link_error:
+                    self.handle_download_error(link, link_error)
                     continue
 
                 if not self.test_only:
@@ -420,7 +420,7 @@ class Dagr:
         print(self.deviant + "'s " + strmode3 + " successfully ripped.")
 
     def print_errors(self):
-        if len(self.errors_count):
+        if self.errors_count:
             print("Download errors count:")
             for error in self.errors_count:
                 print("* " + error + " : " + str(self.errors_count[error]))
