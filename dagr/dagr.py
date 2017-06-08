@@ -14,8 +14,18 @@ import re
 import sys
 from getopt import gnu_getopt, GetoptError
 from os import getcwd, makedirs
-from os.path import abspath, basename, exists as path_exists, expanduser
+from os.path import (
+    abspath, basename, exists as path_exists,
+    expanduser, join as path_join
+    )
 from random import choice
+
+try:
+    # Python 3
+    import configparser
+except ImportError:
+    # Python 2
+    import ConfigParser as configparser
 
 from robobrowser import RoboBrowser
 from requests import codes as req_codes, session as req_session
@@ -60,6 +70,20 @@ class Dagr:
 
         # Current status
         self.deviant = ""
+
+    def load_configuration(self):
+        my_conf = configparser.ConfigParser()
+        # Try to read global then local configuration
+        my_conf.read([expanduser("~/.config/dagr/dagr_settings.ini"),
+                      path_join(getcwd(), "dagr_settings.ini")])
+        if my_conf.has_option("DeviantArt", "Username"):
+            self.username = my_conf.get("DeviantArt", "Username")
+        if my_conf.has_option("DeviantArt", "Password"):
+            self.password = my_conf.get("DeviantArt", "Password")
+        if my_conf.has_option("Dagr", "OutputDirectory"):
+            self.directory = abspath(
+                expanduser(my_conf.get("Dagr", "OutputDirectory"))
+                ) + "/"
 
     def start(self):
         if not self.browser:
@@ -501,6 +525,7 @@ def main():
         sys.exit()
 
     ripper = Dagr()
+    ripper.load_configuration()
 
     for opt, arg in options:
         if opt in ('-h', '--help'):
