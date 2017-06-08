@@ -4,6 +4,7 @@
 #### TBD
 - Allow to set custom output directory, #10
 - Allow mature deviations download without login, #11
+- Add configuration file support, #9
 - PEP8/pylint cleanups
 - Fix favs download
 - Catch failed HTTP requests
