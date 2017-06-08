@@ -19,6 +19,13 @@ You can install it with layman:
 ### Current bugs and limitations
 These should be tracked here: https://github.com/voyageur/dagr/issues
 
+### Configuration file
+Some parameters can be set in a configuration file, the script will look for it in these locations:
+* ~/.config/dagr/dagr_settings.ini
+* ./dagr_settings.ini
+
+You can copy and adapt the provided [sample file](dagr_settings.ini.sample)
+
 ###  Usage
 Here's an example of how to use the script:
 
