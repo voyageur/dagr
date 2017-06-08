@@ -175,7 +175,7 @@ class Dagr:
 
         if not filelink:
             if mature_error:
-                raise DagrException("probably a mature deviation")
+                raise DagrException("maybe a mature deviation/not an image")
             else:
                 raise DagrException("all attemps to find a link failed")
 
@@ -463,7 +463,7 @@ redownloads a file even if it already exists
 outputs detailed information on downloads
 
 Mature deviations:
- to download mature deviations you must specify your deviantArt account,
+ to download mature deviations you may need to specify your deviantArt account,
  with \"Show Deviations with Mature Content\" option enabled
 
 Proxies:
