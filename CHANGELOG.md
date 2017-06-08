@@ -2,7 +2,9 @@
 
 ## [0.62] (https://github.com/voyageur/dagr/tree/0.62)
 #### TBD
-- PEP8 cleanups
+- Allow to set custom output directory, #10
+- Allow mature deviations download without login, #11
+- PEP8/pylint cleanups
 - Fix favs download
 - Catch failed HTTP requests
 
