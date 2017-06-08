@@ -144,7 +144,8 @@ class Dagr:
             print("Login unsuccessful. Attempting to download anyway.")
 
     def get(self, url, file_name=None):
-        if file_name and not self.overwrite and (path_exists(file_name)):
+        if (file_name and not self.overwrite and
+                path_exists(self.directory + file_name)):
             print(file_name + " exists - skipping")
             return
         self.browser.open(url)
