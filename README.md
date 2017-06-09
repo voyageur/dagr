@@ -24,7 +24,7 @@ Some parameters can be set in a configuration file, the script will look for it 
 * ~/.config/dagr/dagr_settings.ini
 * ./dagr_settings.ini
 
-You can copy and adapt the provided [sample file](dagr_settings.ini.sample)
+You can copy and adapt the provided [sample file](dagr_settings.ini.sample), also available after installation in /usr/share/dagr
 
 ###  Usage
 Here's an example of how to use the script:
@@ -52,7 +52,7 @@ Not likely. However, dagr.py could be blocked at any time. If you want to be sur
 Sometimes deviantArt reports the wrong number of deviations in a gallery. This is because you can submit deviations exclusively to a group without having it show up in your gallery.
 
 - Why can I not download mature deviations?  
-You must use a deviantArt account that is able to view such deviations, and has "Show Deviations with Mature Content" enabled under Settings > Browsing.
+You may need to use a deviantArt account that is able to view such deviations, and has "Show Deviations with Mature Content" enabled under Settings > Browsing.
 
 ### Older versions
 

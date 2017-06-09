@@ -30,6 +30,7 @@ setup(
     author='Bernard Cafarelli',
     url='https://github.com/voyageur/dagr',
     scripts=['dagr/dagr.py'],
+    data_files=[('share/dagr', ['dagr_settings.ini.sample'])],
     packages=(),
     install_requires=["robobrowser == 0.5.3"],
 )
