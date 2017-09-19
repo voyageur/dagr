@@ -476,11 +476,15 @@ downloads entire gallery
 downloads entire scraps gallery
 -f, --favs
 downloads all favourites
--c, --collection=#####
+-c, --collection=NUMERIC_ID/NAME
 downloads specified favourites collection
--a, --album=#####
+ You need to specify both id and name (from the collection URL)
+ Example: 123456789/my_favourites
+-a, --album=NUMERIC_ID/NAME
 downloads specified album
--q, --query=#####
+ You need to specify both id and name (from the album URL)
+ Example: 123456789/my_first_album
+-q, --query=QUERY_TEXT
 downloads artwork matching specified query string
 -t, --test
 skips the actual downloads, just prints URLs
