@@ -1,9 +1,11 @@
 # Changelog
 
 ## [0.62] (https://github.com/voyageur/dagr/tree/0.62)
-#### TBD
-- Allow to set custom output directory, #10
+#### 19/09/2017
+- Switch to HTTPS URLs (plain HTTP does not work anymore), #14
+- Better help message for albums/collections, #13
 - Allow mature deviations download without login, #11
+- Allow to set custom output directory, #10
 - Add configuration file support, #9
 - PEP8/pylint cleanups
 - Fix favs download
