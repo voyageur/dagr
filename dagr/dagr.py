@@ -181,7 +181,8 @@ class Dagr:
                 if self.mature:
                     raise DagrException("maybe not an image")
                 else:
-                    raise DagrException("maybe a mature deviation/not an image")
+                    raise DagrException("maybe a mature deviation/" +
+                                        "not an image")
             else:
                 raise DagrException("all attemps to find a link failed")
 
