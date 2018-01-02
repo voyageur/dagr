@@ -364,12 +364,9 @@ class Dagr:
                r"\\/art\\/[a-zA-Z0-9_-]*")
         pages = []
         for folder in folders:
-            try:
-                folderid = re.search("[0-9]+", folder, re.IGNORECASE).group(0)
-                label = re.search("label=\"([^\"]*)", folder,
-                                  re.IGNORECASE).group(1)
-            except:
-                continue
+            folderid = re.search("[0-9]+", folder, re.IGNORECASE).group(0)
+            label = re.search("label=\"([^\"]*)", folder,
+                              re.IGNORECASE).group(1)
             for i in range(0, int(Dagr.MAX_DEVIATIONS / 24), 24):
                 html = self.get("https://" + self.deviant.lower() +
                                 ".deviantart.com/" + strmode2 + "/?set=" +
