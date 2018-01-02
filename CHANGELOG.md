@@ -2,6 +2,10 @@
 
 ## [0.63] (https://github.com/voyageur/dagr/tree/0.63)
 #### TBD
+- Drop login steps, site now uses reCAPTCHA, #18
+- Make mature content download optional
+- Do not crash on missing image files, #16
+- Code cleanup
 
 ## [0.62] (https://github.com/voyageur/dagr/tree/0.62)
 #### 19/09/2017
