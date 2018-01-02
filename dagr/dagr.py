@@ -128,7 +128,7 @@ class Dagr:
         self.browser.open(url)
 
         if self.browser.response.status_code != req_codes.ok:
-            raise DagrException("incorrect status code: " +
+            raise DagrException("incorrect status code - " +
                                 str(self.browser.response.status_code))
 
         if file_name is None:
@@ -287,12 +287,16 @@ class Dagr:
                 continue
 
             if not self.test_only:
-                if mode in ["query", "album", "collection"]:
-                    self.get(filelink, self.deviant + "/" +
-                             mode + "/" + mode_arg + "/" + filename)
-                else:
-                    self.get(filelink, self.deviant + "/" +
-                             mode + "/" + filename)
+                try:
+                    if mode in ["query", "album", "collection"]:
+                        self.get(filelink, self.deviant + "/" +
+                                 mode + "/" + mode_arg + "/" + filename)
+                    else:
+                        self.get(filelink, self.deviant + "/" +
+                                 mode + "/" + filename)
+                except DagrException as get_error:
+                    self.handle_download_error(link, get_error)
+                    continue
             else:
                 print(filelink)
 
@@ -410,12 +414,16 @@ class Dagr:
                     continue
 
                 if not self.test_only:
-                    if mode == "favs":
-                        self.get(filelink, self.deviant + "/favs/" +
-                                 label + "/" + filename)
-                    elif mode == "gallery":
-                        self.get(filelink, self.deviant + "/" + label +
-                                 "/" + filename)
+                    try:
+                        if mode == "favs":
+                            self.get(filelink, self.deviant + "/favs/" +
+                                     label + "/" + filename)
+                        elif mode == "gallery":
+                            self.get(filelink, self.deviant + "/" + label +
+                                     "/" + filename)
+                    except DagrException as get_error:
+                        self.handle_download_error(link, get_error)
+                        continue
                 else:
                     print(filelink)
 
