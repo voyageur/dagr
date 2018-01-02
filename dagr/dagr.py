@@ -266,8 +266,8 @@ class Dagr:
             except OSError as mkdir_error:
                 print(str(mkdir_error))
                 return
-            print("Total deviations in " + self.deviant +
-                  "'s gallery found: " + str(len(pages)))
+            print("Total deviations in " + self.deviant + "'s " +
+                  mode + " found: " + str(len(pages)))
 
         # DEPTH 2
         counter2 = 0
@@ -300,7 +300,7 @@ class Dagr:
             else:
                 print(filelink)
 
-        print(self.deviant + "'s gallery successfully ripped.")
+        print(self.deviant + "'s " + mode + " successfully ripped.")
 
     def group_get(self, mode):
         if mode == "favs":
