@@ -61,8 +61,6 @@ class Dagr:
 
         # Configuration
         self.directory = getcwd() + "/"
-        self.username = ""
-        self.password = ""
         self.overwrite = False
         self.reverse = False
         self.test_only = False
@@ -76,10 +74,6 @@ class Dagr:
         # Try to read global then local configuration
         my_conf.read([expanduser("~/.config/dagr/dagr_settings.ini"),
                       path_join(getcwd(), "dagr_settings.ini")])
-        if my_conf.has_option("DeviantArt", "Username"):
-            self.username = my_conf.get("DeviantArt", "Username")
-        if my_conf.has_option("DeviantArt", "Password"):
-            self.password = my_conf.get("DeviantArt", "Password")
         if my_conf.has_option("Dagr", "OutputDirectory"):
             self.directory = abspath(
                 expanduser(my_conf.get("Dagr", "OutputDirectory"))
@@ -89,8 +83,6 @@ class Dagr:
         if not self.browser:
             # Set up fake browser
             self.set_browser()
-        # Always run login
-        self.login()
 
     def set_browser(self):
         user_agents = (
@@ -123,25 +115,6 @@ class Dagr:
         self.browser = RoboBrowser(history=False, session=session,
                                    tries=3, user_agent=choice(user_agents),
                                    parser=parser)
-
-    def login(self):
-        if not (self.username and self.password):
-            return
-        print("Attempting to log in to deviantArt...")
-        self.browser.open('https://www.deviantart.com/users/login?ref='
-                          'https%3A%2F%2Fwww.deviantart.com%2F&remember_me=1')
-        form = self.browser.get_forms()[1]
-        form['username'] = self.username
-        form['password'] = self.password
-        self.browser.submit_form(form)
-
-        if self.browser.find(
-                text=re.compile("The password you entered was incorrect")):
-            print("Wrong password or username. Attempting to download anyway.")
-        elif self.browser.find(text=re.compile("\"loggedIn\":true")):
-            print("Logged in!")
-        else:
-            print("Login unsuccessful. Attempting to download anyway.")
 
     def get(self, url, file_name=None):
         if (file_name and not self.overwrite and
@@ -454,7 +427,7 @@ class Dagr:
 def print_help():
     print(Dagr.NAME + " v" + Dagr.__version__ + " - deviantArt gallery ripper")
     print("Usage: " + Dagr.NAME +
-          " [-d directory] [-u username] [-p password] " +
+          " [-d directory] " +
           "[-acfghoqrstv] [deviant]...")
     print("Example: " + Dagr.NAME + " -u user -p 1234 -gsfv derp123 blah55")
     print("For extended help and other options, run " + Dagr.NAME + " -h")
@@ -466,10 +439,6 @@ def print_help_detailed():
 Argument list:
 -d, --directory=PATH
 directory to save images to, default is current one
--u, --username=USERNAME
-your deviantArt account username
--p, --password=PASSWORD
-your deviantArt account password
 -g, --gallery
 downloads entire gallery
 -s, --scraps
@@ -497,10 +466,6 @@ redownloads a file even if it already exists
 -v, --verbose
 outputs detailed information on downloads
 
-Mature deviations:
- to download mature deviations you may need to specify your deviantArt account,
- with \"Show Deviations with Mature Content\" option enabled
-
 Proxies:
  you can also configure proxies by setting the environment variables
  HTTP_PROXY and HTTPS_PROXY
@@ -519,7 +484,7 @@ def main():
         sys.exit()
 
     g_opts = "d:u:p:a:q:c:vfgshrto"
-    g_long_opts = ['directory=', 'username=', 'password=',
+    g_long_opts = ['directory=',
                    'album=', 'query=', 'collection=',
                    'verbose', 'favs', 'gallery', 'scraps',
                    'help', 'reverse', 'test', 'overwrite']
@@ -538,10 +503,6 @@ def main():
             sys.exit()
         elif opt in ('-d', '--directory'):
             ripper.directory = abspath(expanduser(arg)) + "/"
-        elif opt in ('-u', '--username'):
-            ripper.username = arg
-        elif opt in ('-p', '--password'):
-            ripper.password = arg
         elif opt in ('-s', '--scraps'):
             scraps = True
         elif opt in ('-g', '--gallery'):

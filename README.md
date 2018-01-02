@@ -32,14 +32,12 @@ Here's an example of how to use the script:
 ```
 $ python dagr.py
 dagr.py v0.60 - deviantArt gallery ripper
-Usage: dagr.py [-u username] [-p password] [-acfghoqrstv] [deviant]...
-Example: dagr.py -u user -p 1234 -gsfv derp123 blah55
+Usage: dagr.py [-acfghoqrstv] [deviant]...
+Example: dagr.py -gsfv derp123 blah55
 For extended help and other options, run dagr.py -h
 
-$ python dagr.py -u username -p password -gs doo22
+$ python dagr.py -gs doo22
 dagr.py v0.60 - deviantArt gallery ripper
-Attempting to log in to deviantArt...
-Logged in!
 Current deviant: doo22
 Ripping doo22's gallery...
 ```
