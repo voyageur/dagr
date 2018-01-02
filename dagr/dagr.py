@@ -61,6 +61,7 @@ class Dagr:
 
         # Configuration
         self.directory = getcwd() + "/"
+        self.mature = False
         self.overwrite = False
         self.reverse = False
         self.test_only = False
@@ -74,6 +75,8 @@ class Dagr:
         # Try to read global then local configuration
         my_conf.read([expanduser("~/.config/dagr/dagr_settings.ini"),
                       path_join(getcwd(), "dagr_settings.ini")])
+        if my_conf.has_option("DeviantArt", "MatureContent"):
+            self.mature = my_conf.getboolean("DeviantArt", "MatureContent")
         if my_conf.has_option("Dagr", "OutputDirectory"):
             self.directory = abspath(
                 expanduser(my_conf.get("Dagr", "OutputDirectory"))
@@ -102,7 +105,8 @@ class Dagr:
         )
         session = req_session()
         session.headers.update({'Referer': 'https://www.deviantart.com/'})
-        session.cookies.update({'agegate_state': '1'})
+        if self.mature:
+            session.cookies.update({'agegate_state': '1'})
 
         # Try to use lxml parser if available
         # https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
@@ -174,7 +178,10 @@ class Dagr:
 
         if not filelink:
             if mature_error:
-                raise DagrException("maybe a mature deviation/not an image")
+                if self.mature:
+                    raise DagrException("maybe not an image")
+                else:
+                    raise DagrException("maybe a mature deviation/not an image")
             else:
                 raise DagrException("all attemps to find a link failed")
 
@@ -427,8 +434,10 @@ class Dagr:
 def print_help():
     print(Dagr.NAME + " v" + Dagr.__version__ + " - deviantArt gallery ripper")
     print("Usage: " + Dagr.NAME +
-          " [-d directory] " +
-          "[-acfghoqrstv] [deviant]...")
+          " [-d directory] " + "[-fgmhorstv] " +
+          "[-q query_text] [-c collection_id/collection_name] " +
+          "[-a album_id/album_name] " +
+          "deviant1 [deviant2] [...]")
     print("Example: " + Dagr.NAME + " -u user -p 1234 -gsfv derp123 blah55")
     print("For extended help and other options, run " + Dagr.NAME + " -h")
 
@@ -439,6 +448,8 @@ def print_help_detailed():
 Argument list:
 -d, --directory=PATH
 directory to save images to, default is current one
+-m, --mature
+allows to download mature content
 -g, --gallery
 downloads entire gallery
 -s, --scraps
@@ -483,8 +494,8 @@ def main():
         print_help()
         sys.exit()
 
-    g_opts = "d:u:p:a:q:c:vfgshrto"
-    g_long_opts = ['directory=',
+    g_opts = "d:mu:p:a:q:c:vfgshrto"
+    g_long_opts = ['directory=', 'mature',
                    'album=', 'query=', 'collection=',
                    'verbose', 'favs', 'gallery', 'scraps',
                    'help', 'reverse', 'test', 'overwrite']
@@ -503,6 +514,8 @@ def main():
             sys.exit()
         elif opt in ('-d', '--directory'):
             ripper.directory = abspath(expanduser(arg)) + "/"
+        elif opt in ('-m', '--mature'):
+            ripper.mature = True
         elif opt in ('-s', '--scraps'):
             scraps = True
         elif opt in ('-g', '--gallery'):

@@ -1,5 +1,6 @@
 [DeviantArt]
-# Ignored in versions >= 0.63
+MatureContent: False
+# Login settings ignored in versions >= 0.63
 Username: username
 Password: password
 
