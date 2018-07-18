@@ -3,6 +3,7 @@
 ## [0.64] (https://github.com/voyageur/dagr/tree/0.64)
 #### TBD
 - Update to new base URL, fix #24
+- Repair and rewrite group crawling
 
 ## [0.63] (https://github.com/voyageur/dagr/tree/0.63)
 #### 02/01/2018

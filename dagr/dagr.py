@@ -53,6 +53,8 @@ class Dagr:
     NAME = basename(__file__)
     __version__ = "0.64"
     MAX_DEVIATIONS = 1000000  # max deviations
+    ART_PATTERN = (r"https://www\.deviantart\.com/"
+                   r"[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*")
 
     def __init__(self):
         # Internals
@@ -199,7 +201,6 @@ class Dagr:
 
     def deviant_get(self, mode):
         print("Ripping " + self.deviant + "'s " + mode + "...")
-        pat = r"https://www\.deviantart\.com/[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*"
         mode_arg = '_'
         if mode.find(':') != -1:
             mode = mode.split(':', 1)
@@ -233,7 +234,8 @@ class Dagr:
                 print("Could not find " + self.deviant + "'s " + mode)
                 return
 
-            prelim = re.findall(pat, html, re.IGNORECASE | re.DOTALL)
+            prelim = re.findall(Dagr.ART_PATTERN, html,
+                                re.IGNORECASE | re.DOTALL)
 
             c = len(prelim)
             for match in prelim:
@@ -304,52 +306,32 @@ class Dagr:
         print(self.deviant + "'s " + mode + " successfully ripped.")
 
     def group_get(self, mode):
+        # TODO: merge duplicate code with deviant_get
+        print("Ripping " + self.deviant + "'s " + mode + "...")
+
+        url = 'https://www.deviantart.com/' + self.deviant.lower() + '/'
         if mode == "favs":
-            strmode = "favby"
-            strmode2 = "favourites"
-            strmode3 = "favs gallery"
+            url += "favourites/"
         elif mode == "gallery":
-            strmode = "gallery"
-            strmode2 = "gallery"
-            strmode3 = "gallery"
-        else:
-            print("?")
-            sys.exit()
-        print("Ripping " + self.deviant + "'s " + strmode2 + "...")
+            url += "gallery/"
 
         folders = []
 
-        inside_folder = False
-        # are we inside a gallery folder?
-        html = self.get('https://www.deviantart.com/' +
-                        self.deviant + '/' + strmode2 + '/')
-        if re.search(strmode2 + r"/\?set=.+&offset=", html,
-                     re.IGNORECASE | re.S):
-            inside_folder = True
-            folders = re.findall(strmode + ":.+ label=\"[^\"]*\"",
-                                 html, re.IGNORECASE)
-
-        # no repeats
-        folders = list(set(folders))
-
         i = 0
-        while not inside_folder:
-            html = self.get('https://www.deviantart.com' +
-                            self.deviant + '/' +
-                            strmode2 + '/?offset=' + str(i))
-            k = re.findall(strmode + ":" + self.deviant +
-                           r"/\d+\"\ +label=\"[^\"]*\"", html, re.IGNORECASE)
+        while True:
+            html = self.get(url + '?offset=' + str(i))
+            k = re.findall('class="ch-top" href="' + url +
+                           '([0-9]*/[a-zA-Z0-9_-]*)"',
+                           html, re.IGNORECASE)
             if k == []:
                 break
-            flag = False
+
+            new_folder = False
             for match in k:
-                if match in folders:
-                    flag = True
-                else:
+                if match not in folders:
                     folders += k
-            if self.verbose:
-                print("Gallery page " + str(int((i / 10) + 1)) + " crawled...")
-            if flag:
+                    new_folder = True
+            if not new_folder:
                 break
             i += 10
 
@@ -357,48 +339,52 @@ class Dagr:
         folders = list(set(folders))
 
         if not folders:
-            print(self.deviant + "'s " + strmode3 + " is empty.")
+            print(self.deviant + "'s " + mode + " is empty.")
             return
         else:
             print("Total folders in " + self.deviant + "'s " +
-                  strmode3 + " found: " + str(len(folders)))
+                  mode + " found: " + str(len(folders)))
 
         if self.reverse:
             folders.reverse()
 
-        pat = (r"https:\\/\\/www\.\.deviantart\.com"
-               r"\\/[a-zA-Z0-9_-]*\\/"
-               r"\\/art\\/[a-zA-Z0-9_-]*")
         pages = []
         for folder in folders:
-            folderid = re.search("[0-9]+", folder, re.IGNORECASE).group(0)
-            label = re.search("label=\"([^\"]*)", folder,
-                              re.IGNORECASE).group(1)
+            (folderid, label) = folder.split('/')
             for i in range(0, int(Dagr.MAX_DEVIATIONS / 24), 24):
-                html = self.get('https://www.deviantart.com/' +
-                                self.deviant.lower() + '/' +
-                                strmode2 + '/?set=' +
-                                folderid + '&offset=' + str(i - 24))
-                prelim = re.findall(pat, html, re.IGNORECASE)
-                if not prelim:
+                try:
+                    html = self.get(url + folder + '?offset=' + str(i))
+                except DagrException:
+                    print("Could not find " + self.deviant + "'s " +
+                          mode + " " + folder)
+                    return
+
+                prelim = re.findall(Dagr.ART_PATTERN, html,
+                                    re.IGNORECASE | re.DOTALL)
+
+                c = len(prelim)
+                for match in prelim:
+                    if match in pages:
+                        c -= 1
+                    else:
+                        pages.append(match)
+
+                done = re.findall("(This section has no deviations yet!|"
+                                  "This collection has no items yet!)",
+                                  html, re.IGNORECASE | re.S)
+
+                if len(done) >= 1 or c <= 0:
                     break
-                for x in prelim:
-                    p = str(re.sub(r'\\/', '/', x))
-                    if p not in pages:
-                        pages.append(p)
-                if self.verbose:
-                    print("Page " + str(int((i / 24) + 1)) +
-                          " in folder " + label + " crawled...")
+
+                print("Page " + str(int((i / 24) + 1)) +
+                      " in folder " + label + " crawled...")
 
             if not self.reverse:
                 pages.reverse()
 
             try:
-                if mode == "favs":
-                    da_make_dirs(self.directory + self.deviant +
-                                 "/favs/" + label)
-                elif mode == "gallery":
-                    da_make_dirs(self.directory + self.deviant + "/" + label)
+                da_make_dirs(self.directory + self.deviant + "/" +
+                             mode + "/" + label)
             except OSError as mkdir_error:
                 print(str(mkdir_error))
             counter = 0
@@ -419,19 +405,15 @@ class Dagr:
 
                 if not self.test_only:
                     try:
-                        if mode == "favs":
-                            self.get(filelink, self.deviant + "/favs/" +
-                                     label + "/" + filename)
-                        elif mode == "gallery":
-                            self.get(filelink, self.deviant + "/" + label +
-                                     "/" + filename)
+                        self.get(filelink, self.deviant + "/" +
+                                 mode + "/" + label + "/" + filename)
                     except DagrException as get_error:
                         self.handle_download_error(link, get_error)
                         continue
                 else:
                     print(filelink)
 
-        print(self.deviant + "'s " + strmode3 + " successfully ripped.")
+        print(self.deviant + "'s " + mode + " successfully ripped.")
 
     def print_errors(self):
         if self.errors_count:
@@ -560,13 +542,12 @@ def main():
     for deviant in deviants:
         group = False
         try:
-            deviant = re.search(r'<title>.[A-Za-z0-9-]*',
-                                ripper.get('https://www.deviantart.com/' +
-                                           deviant + '/'),
+            html = ripper.get('https://www.deviantart.com/' + deviant + '/')
+            deviant = re.search(r'<title>.[A-Za-z0-9-]*', html,
                                 re.IGNORECASE).group(0)[7:]
-            if re.match("#", deviant):
-                group = True
             deviant = re.sub('[^a-zA-Z0-9_-]+', '', deviant)
+            if re.search('<dt class="f h">Group</dt>', html):
+                group = True
         except DagrException:
             print("Deviant " + deviant + " not found or deactivated!")
             continue
