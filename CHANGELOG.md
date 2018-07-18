@@ -1,7 +1,11 @@
 # Changelog
 
-## [0.63] (https://github.com/voyageur/dagr/tree/0.63)
+## [0.64] (https://github.com/voyageur/dagr/tree/0.64)
 #### TBD
+- Update to new base URL, fix #24
+
+## [0.63] (https://github.com/voyageur/dagr/tree/0.63)
+#### 02/01/2018
 - Drop login steps, site now uses reCAPTCHA, #18
 - Make mature content download optional
 - Do not crash on missing image files, #16
