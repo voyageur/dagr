@@ -199,7 +199,7 @@ class Dagr:
 
     def deviant_get(self, mode):
         print("Ripping " + self.deviant + "'s " + mode + "...")
-        pat = r"https://[a-zA-Z0-9_-]*\.deviantart\.com/art/[a-zA-Z0-9_-]*"
+        pat = r"https://www\.deviantart\.com/[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*"
         mode_arg = '_'
         if mode.find(':') != -1:
             mode = mode.split(':', 1)
@@ -210,7 +210,7 @@ class Dagr:
         pages = []
         for i in range(0, int(Dagr.MAX_DEVIATIONS / 24), 24):
             html = ""
-            url = "https://" + self.deviant.lower() + ".deviantart.com/"
+            url = "https://www.deviantart.com/" + self.deviant.lower() + "/"
 
             if mode == "favs":
                 url += "favourites/?catpath=/&offset=" + str(i)
@@ -321,8 +321,8 @@ class Dagr:
 
         inside_folder = False
         # are we inside a gallery folder?
-        html = self.get('https://' + self.deviant +
-                        '.deviantart.com/' + strmode2 + '/')
+        html = self.get('https://www.deviantart.com/' +
+                        self.deviant + '/' + strmode2 + '/')
         if re.search(strmode2 + r"/\?set=.+&offset=", html,
                      re.IGNORECASE | re.S):
             inside_folder = True
@@ -334,7 +334,8 @@ class Dagr:
 
         i = 0
         while not inside_folder:
-            html = self.get('https://' + self.deviant + '.deviantart.com/' +
+            html = self.get('https://www.deviantart.com' +
+                            self.deviant + '/' +
                             strmode2 + '/?offset=' + str(i))
             k = re.findall(strmode + ":" + self.deviant +
                            r"/\d+\"\ +label=\"[^\"]*\"", html, re.IGNORECASE)
@@ -365,7 +366,8 @@ class Dagr:
         if self.reverse:
             folders.reverse()
 
-        pat = (r"https:\\/\\/[a-zA-Z0-9_-]*\.deviantart\.com"
+        pat = (r"https:\\/\\/www\.\.deviantart\.com"
+               r"\\/[a-zA-Z0-9_-]*\\/"
                r"\\/art\\/[a-zA-Z0-9_-]*")
         pages = []
         for folder in folders:
@@ -373,9 +375,10 @@ class Dagr:
             label = re.search("label=\"([^\"]*)", folder,
                               re.IGNORECASE).group(1)
             for i in range(0, int(Dagr.MAX_DEVIATIONS / 24), 24):
-                html = self.get("https://" + self.deviant.lower() +
-                                ".deviantart.com/" + strmode2 + "/?set=" +
-                                folderid + "&offset=" + str(i - 24))
+                html = self.get('https://www.deviantart.com/' +
+                                self.deviant.lower() + '/' +
+                                strmode2 + '/?set=' +
+                                folderid + '&offset=' + str(i - 24))
                 prelim = re.findall(pat, html, re.IGNORECASE)
                 if not prelim:
                     break
@@ -558,8 +561,8 @@ def main():
         group = False
         try:
             deviant = re.search(r'<title>.[A-Za-z0-9-]*',
-                                ripper.get("https://" + deviant +
-                                           ".deviantart.com"),
+                                ripper.get('https://www.deviantart.com/' +
+                                           deviant + '/'),
                                 re.IGNORECASE).group(0)[7:]
             if re.match("#", deviant):
                 group = True
