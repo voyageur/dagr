@@ -33,7 +33,7 @@ Here's an example of how to use the script:
 $ python dagr.py
 dagr.py v0.63 - deviantArt gallery ripper
 Usage: dagr.py [-d directory] [-fgmhorstv] [-q query_text] [-c collection_id/collection_name] [-a album_id/album_name] deviant1 [deviant2] [...]
-Example: dagr.py -u user -p 1234 -gsfv derp123 blah55
+Example: dagr.py -gsfv derp123 blah55
 For extended help and other options, run dagr.py -h
 
 $ python dagr.py -gs doo22

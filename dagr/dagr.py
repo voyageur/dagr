@@ -429,7 +429,7 @@ def print_help():
           "[-q query_text] [-c collection_id/collection_name] " +
           "[-a album_id/album_name] " +
           "deviant1 [deviant2] [...]")
-    print("Example: " + Dagr.NAME + " -u user -p 1234 -gsfv derp123 blah55")
+    print("Example: " + Dagr.NAME + " -gsfv derp123 blah55")
     print("For extended help and other options, run " + Dagr.NAME + " -h")
 
 

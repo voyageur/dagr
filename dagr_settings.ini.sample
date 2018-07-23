@@ -1,8 +1,5 @@
 [DeviantArt]
 MatureContent: False
-# Login settings ignored in versions >= 0.63
-Username: username
-Password: password
 
 [Dagr]
 OutputDirectory: ~/dagr
