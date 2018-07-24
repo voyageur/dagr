@@ -51,7 +51,7 @@ class Dagr:
     """deviantArt gallery ripper class"""
 
     NAME = basename(__file__)
-    __version__ = "0.64"
+    __version__ = "0.65"
     MAX_DEVIATIONS = 1000000  # max deviations
     ART_PATTERN = (r"https://www\.deviantart\.com/"
                    r"[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*")
