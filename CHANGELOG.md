@@ -1,7 +1,7 @@
 # Changelog
 
 ## [0.64] (https://github.com/voyageur/dagr/tree/0.64)
-#### TBD
+#### 24/07/2018
 - Update to new base URL, fix #24
 - Repair and rewrite group crawling
 - Workaround robobrowser bug for Python 3.7, fix #25
