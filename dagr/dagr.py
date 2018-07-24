@@ -117,6 +117,9 @@ class Dagr:
             parser = "lxml"
         except ImportError:
             parser = "html.parser"
+        # Workaround robobrowser bug https://github.com/jmcarp/robobrowser/issues/87
+        if sys.version_info>=(3,5):
+            re._pattern_type = re.Pattern
 
         self.browser = RoboBrowser(history=False, session=session,
                                    tries=3, user_agent=choice(user_agents),
