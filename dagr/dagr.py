@@ -118,7 +118,7 @@ class Dagr:
         except ImportError:
             parser = "html.parser"
         # Workaround robobrowser bug https://github.com/jmcarp/robobrowser/issues/87
-        if sys.version_info>=(3,5):
+        if sys.version_info>=(3,7):
             re._pattern_type = re.Pattern
 
         self.browser = RoboBrowser(history=False, session=session,
