@@ -27,8 +27,12 @@ except ImportError:
     # Python 2
     import ConfigParser as configparser
 
-from robobrowser import RoboBrowser
-from requests import codes as req_codes, session as req_session
+from mechanicalsoup import StatefulBrowser
+from requests import (
+        adapters as req_adapters,
+        codes as req_codes,
+        session as req_session
+        )
 
 
 # Helper functions
@@ -109,40 +113,29 @@ class Dagr:
         session.headers.update({'Referer': 'https://www.deviantart.com/'})
         if self.mature:
             session.cookies.update({'agegate_state': '1'})
+        session.mount('https://', req_adapters.HTTPAdapter(max_retries=3))
 
-        # Try to use lxml parser if available
-        # https://www.crummy.com/software/BeautifulSoup/bs4/doc/#installing-a-parser
-        try:
-            __import__("lxml")
-            parser = "lxml"
-        except ImportError:
-            parser = "html.parser"
-        # Workaround robobrowser bug https://github.com/jmcarp/robobrowser/issues/87
-        if sys.version_info>=(3,7):
-            re._pattern_type = re.Pattern
-
-        self.browser = RoboBrowser(history=False, session=session,
-                                   tries=3, user_agent=choice(user_agents),
-                                   parser=parser)
+        self.browser = StatefulBrowser(session=session,
+                                       user_agent=choice(user_agents))
 
     def get(self, url, file_name=None):
         if (file_name and not self.overwrite and
                 path_exists(self.directory + file_name)):
             print(file_name + " exists - skipping")
             return
-        self.browser.open(url)
+        get_resp = self.browser.open(url)
 
-        if self.browser.response.status_code != req_codes.ok:
+        if get_resp.status_code != req_codes.ok:
             raise DagrException("incorrect status code - " +
                                 str(self.browser.response.status_code))
 
         if file_name is None:
-            return str(self.browser.parsed)
+            return get_resp.text
         else:
             # Open our local file for writing
             local_file = open(self.directory + file_name, "wb")
             # Write to our local file
-            local_file.write(self.browser.response.content)
+            local_file.write(get_resp.content)
             local_file.close()
 
     def find_link(self, link):
@@ -151,17 +144,23 @@ class Dagr:
         self.browser.open(link)
         # Full image link (via download link)
         link_text = re.compile("Download( (Image|File))?")
-        img_link = self.browser.get_link(text=link_text)
-        if img_link and img_link.get("href"):
+        img_link = None
+        for link in self.browser.links("a"):
+            if link_text.search(link.text) and link.get("href"):
+                img_link = link
+                break
+
+        if img_link:
             self.browser.follow_link(img_link)
-            filelink = self.browser.url
+            filelink = self.browser.get_url()
             return (basename(filelink), filelink)
 
         if self.verbose:
             print("Download link not found, falling back to direct image")
 
+        current_page = self.browser.get_current_page()
         # Fallback 1: try meta (filtering blocked meta)
-        filesearch = self.browser.find("meta", {"property": "og:image"})
+        filesearch = current_page.find("meta", {"property": "og:image"})
         if filesearch:
             filelink = filesearch['content']
             if basename(filelink).startswith("noentrythumb-"):
@@ -169,12 +168,12 @@ class Dagr:
                 mature_error = True
         if not filelink:
             # Fallback 2: try collect_rid, full
-            filesearch = self.browser.find("img",
+            filesearch = current_page.find("img",
                                            {"collect_rid": True,
                                             "class": re.compile(".*full")})
             if not filesearch:
                 # Fallback 3: try collect_rid, normal
-                filesearch = self.browser.find("img",
+                filesearch = current_page.find("img",
                                                {"collect_rid": True,
                                                 "class":
                                                     re.compile(".*normal")})
