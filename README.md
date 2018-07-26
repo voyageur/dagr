@@ -3,19 +3,31 @@ dagr.py (deviantArt gallery ripper) is a deviantArt image downloader script writ
 It can download every image (deviation) in a gallery, as well as every favorited deviation a deviant may have.
 Originally developed at http://lovecastle.org/dagr/ (now defunct), development now continues on Github
 
-Changelog is available [here](CHANGELOG.md)
-
 ### Dependencies
 * a working Python installation (2.x or 3.x)
-* robobrowser module (https://github.com/jmcarp/robobrowser), and its dependencies
+* MechanicalSoup module (https://github.com/MechanicalSoup/MechanicalSoup), and its dependencies
 
-### Gentoo installation
+### Installation
+dagr is available on PyPI and has setuptools support.
+
+So to install latest released version, you can just run:
+```
+# pip install dagr
+```
+
+To install from checked out source:
+```
+# python setup.py install
+```
+
+### Gentoo package
 dagr is available in the voyageur overlay (https://cafarelli.fr/cgi-bin/cgit.cgi/voyageur-overlay/).
 You can install it with layman:
 ```
 # layman -a voyageur
 # emerge dagr
 ```
+
 ### Current bugs and limitations
 These should be tracked here: https://github.com/voyageur/dagr/issues
 
@@ -51,9 +63,3 @@ Sometimes deviantArt reports the wrong number of deviations in a gallery. This i
 
 - Why can I not download mature deviations?
 You need to enable the mature content download option, either in the configuration file or via the "-m" command line flag
-
-### Older versions
-
-These may still work or not, but have smaller dependencies:
-* Versions before 0.50 only depend on Python, but can not download full images or other file types
-* Versions 0.5x are python-2.x only, and depend on the mechanize module
