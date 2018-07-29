@@ -10,6 +10,7 @@
 
 # This file is offered as-is, without any warranty.
 
+import json
 import re
 import sys
 from getopt import gnu_getopt, GetoptError
@@ -247,6 +248,18 @@ class Dagr:
             print(str(mkdir_error))
             return
 
+        # Find previously downloaded pages
+        existing_pages = []
+        try:
+            with open(base_dir + "/.dagr_downloaded_pages", "r") as filehandle:
+                existing_pages = json.load(filehandle)
+        except FileNotFoundError as fnf_error:
+            # May not exist (new directory, ...)
+            pass
+        if not self.overwrite:
+            pages = [x for x in pages if x not in existing_pages]
+
+        print("Total deviations to download: " + str(len(pages)))
         for count, link in enumerate(pages, start=1):
             if self.verbose:
                 print("Downloading " + str(count) + " of " +
@@ -267,8 +280,15 @@ class Dagr:
                 except DagrException as get_error:
                     self.handle_download_error(link, get_error)
                     continue
+                else:
+                    if link not in existing_pages:
+                        existing_pages.append(link)
             else:
                 print(filelink)
+
+        # Update downloaded pages cache
+        with open(base_dir + "/.dagr_downloaded_pages", "w") as filehandle:
+            json.dump(existing_pages, filehandle)
 
     def deviant_get(self, mode, mode_arg=None):
         print("Ripping " + self.deviant + "'s " + mode + "...")
