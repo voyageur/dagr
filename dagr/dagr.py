@@ -29,10 +29,10 @@ except ImportError:
 
 from mechanicalsoup import StatefulBrowser
 from requests import (
-        adapters as req_adapters,
-        codes as req_codes,
-        session as req_session
-        )
+    adapters as req_adapters,
+    codes as req_codes,
+    session as req_session
+    )
 
 
 # Helper functions
@@ -145,9 +145,9 @@ class Dagr:
         # Full image link (via download link)
         link_text = re.compile("Download( (Image|File))?")
         img_link = None
-        for link in self.browser.links("a"):
-            if link_text.search(link.text) and link.get("href"):
-                img_link = link
+        for candidate in self.browser.links("a"):
+            if link_text.search(candidate.text) and candidate.get("href"):
+                img_link = candidate
                 break
 
         if img_link:
@@ -201,34 +201,32 @@ class Dagr:
         else:
             self.errors_count[error_string] = 1
 
-    def deviant_get(self, mode):
+    def deviant_get(self, mode, mode_arg=None):
         print("Ripping " + self.deviant + "'s " + mode + "...")
-        mode_arg = '_'
-        if mode.find(':') != -1:
-            mode = mode.split(':', 1)
-            mode_arg = mode[1]
-            mode = mode[0]
+
+        base_url = "https://www.deviantart.com/" + self.deviant.lower() + "/"
+        base_dir = self.directory + self.deviant + "/" + mode
+        if mode_arg:
+            base_dir += "/" + mode_arg
+
+        if mode == "favs":
+            base_url += "favourites/?catpath=/&offset="
+        elif mode == "collection":
+            base_url += "favourites/" + mode_arg + "?offset="
+        elif mode == "scraps":
+            base_url += "gallery/?catpath=scraps&offset="
+        elif mode == "gallery":
+            base_url += "gallery/?catpath=/&offset="
+        elif mode == "album":
+            base_url += "gallery/" + mode_arg + "?offset="
+        elif mode == "query":
+            base_url += "gallery/?q=" + mode_arg + "&offset="
 
         # DEPTH 1
         pages = []
         for i in range(0, int(Dagr.MAX_DEVIATIONS / 24), 24):
             html = ""
-            url = "https://www.deviantart.com/" + self.deviant.lower() + "/"
-
-            if mode == "favs":
-                url += "favourites/?catpath=/&offset=" + str(i)
-            elif mode == "collection":
-                url += "favourites/" + mode_arg + "?offset=" + str(i)
-            elif mode == "scraps":
-                url += "gallery/?catpath=scraps&offset=" + str(i)
-            elif mode == "gallery":
-                url += "gallery/?catpath=/&offset=" + str(i)
-            elif mode == "album":
-                url += "gallery/" + mode_arg + "?offset=" + str(i)
-            elif mode == "query":
-                url += "gallery/?q=" + mode_arg + "&offset=" + str(i)
-            else:
-                continue
+            url = base_url + str(i)
 
             try:
                 html = self.get(url)
@@ -264,10 +262,7 @@ class Dagr:
             return
         else:
             try:
-                da_make_dirs(self.directory + self.deviant + "/" + mode)
-                if mode in ["query", "album", "collection"]:
-                    da_make_dirs(self.directory + self.deviant + "/" +
-                                 mode + "/" + mode_arg)
+                da_make_dirs(base_dir)
             except OSError as mkdir_error:
                 print(str(mkdir_error))
                 return
@@ -401,7 +396,7 @@ class Dagr:
                     filename, filelink = self.find_link(link)
                 except (KeyboardInterrupt, SystemExit):
                     raise
-                except Exception as link_error:
+                except DagrException as link_error:
                     self.handle_download_error(link, link_error)
                     continue
 
@@ -570,7 +565,6 @@ def main():
                 ripper.group_get("favs")
             if any([scraps, collection, album, query]):
                 print("Unsupported modes for groups were ignored")
-                # TODO: support other queries / merge code
         else:
             if gallery:
                 ripper.deviant_get("gallery")
@@ -579,11 +573,11 @@ def main():
             if favs:
                 ripper.deviant_get("favs")
             if collection:
-                ripper.deviant_get("collection:" + collection)
+                ripper.deviant_get("collection", collection)
             if album:
-                ripper.deviant_get("album:" + album)
+                ripper.deviant_get("album", album)
             if query:
-                ripper.deviant_get("query:" + query)
+                ripper.deviant_get("query", query)
     print("Job complete.")
 
     ripper.print_errors()
