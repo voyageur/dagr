@@ -120,23 +120,24 @@ class Dagr:
 
     def get(self, url, file_name=None):
         if (file_name and not self.overwrite and
-                path_exists(self.directory + file_name)):
+                path_exists(file_name)):
             print(file_name + " exists - skipping")
-            return
+            return None
         get_resp = self.browser.open(url)
 
         if get_resp.status_code != req_codes.ok:
             raise DagrException("incorrect status code - " +
-                                str(self.browser.response.status_code))
+                                str(get_resp.status_code))
 
         if file_name is None:
             return get_resp.text
-        else:
-            # Open our local file for writing
-            local_file = open(self.directory + file_name, "wb")
-            # Write to our local file
-            local_file.write(get_resp.content)
-            local_file.close()
+
+        # Open our local file for writing
+        local_file = open(file_name, "wb")
+        # Write to our local file
+        local_file.write(get_resp.content)
+        local_file.close()
+        return file_name
 
     def find_link(self, link):
         filelink = None
@@ -201,13 +202,78 @@ class Dagr:
         else:
             self.errors_count[error_string] = 1
 
+    def get_pages(self, mode, base_url):
+        pages = []
+        for i in range(0, int(Dagr.MAX_DEVIATIONS / 24), 24):
+            html = ""
+            url = base_url + str(i)
+
+            try:
+                html = self.get(url)
+            except DagrException:
+                print("Could not find " + self.deviant + "'s " + mode)
+                return pages
+
+            prelim = re.findall(Dagr.ART_PATTERN, html,
+                                re.IGNORECASE | re.DOTALL)
+
+            for match in prelim:
+                if match not in pages:
+                    pages.append(match)
+
+            done = re.findall("(This section has no deviations yet!|"
+                              "This collection has no items yet!)",
+                              html, re.IGNORECASE | re.S)
+
+            if done:
+                break
+
+            print(self.deviant + "'s " + mode + " page " +
+                  str(int((i / 24) + 1)) + " crawled...")
+
+        if not self.reverse:
+            pages.reverse()
+
+        return pages
+
+    def get_images(self, mode, mode_arg, pages):
+        base_dir = self.directory + self.deviant + "/" + mode
+        if mode_arg:
+            base_dir += "/" + mode_arg
+
+        try:
+            da_make_dirs(base_dir)
+        except OSError as mkdir_error:
+            print(str(mkdir_error))
+            return
+
+        for count, link in enumerate(pages, start=1):
+            if self.verbose:
+                print("Downloading " + str(count) + " of " +
+                      str(len(pages)) + " ( " + link + " )")
+            filename = ""
+            filelink = ""
+            try:
+                filename, filelink = self.find_link(link)
+            except (KeyboardInterrupt, SystemExit):
+                raise
+            except DagrException as link_error:
+                self.handle_download_error(link, link_error)
+                continue
+
+            if not self.test_only:
+                try:
+                    self.get(filelink, base_dir + "/" + filename)
+                except DagrException as get_error:
+                    self.handle_download_error(link, get_error)
+                    continue
+            else:
+                print(filelink)
+
     def deviant_get(self, mode, mode_arg=None):
         print("Ripping " + self.deviant + "'s " + mode + "...")
 
         base_url = "https://www.deviantart.com/" + self.deviant.lower() + "/"
-        base_dir = self.directory + self.deviant + "/" + mode
-        if mode_arg:
-            base_dir += "/" + mode_arg
 
         if mode == "favs":
             base_url += "favourites/?catpath=/&offset="
@@ -222,102 +288,32 @@ class Dagr:
         elif mode == "query":
             base_url += "gallery/?q=" + mode_arg + "&offset="
 
-        # DEPTH 1
-        pages = []
-        for i in range(0, int(Dagr.MAX_DEVIATIONS / 24), 24):
-            html = ""
-            url = base_url + str(i)
-
-            try:
-                html = self.get(url)
-            except DagrException:
-                print("Could not find " + self.deviant + "'s " + mode)
-                return
-
-            prelim = re.findall(Dagr.ART_PATTERN, html,
-                                re.IGNORECASE | re.DOTALL)
-
-            c = len(prelim)
-            for match in prelim:
-                if match in pages:
-                    c -= 1
-                else:
-                    pages.append(match)
-
-            done = re.findall("(This section has no deviations yet!|"
-                              "This collection has no items yet!)",
-                              html, re.IGNORECASE | re.S)
-
-            if len(done) >= 1 or c <= 0:
-                break
-
-            print(self.deviant + "'s " + mode + " page " +
-                  str(int((i / 24) + 1)) + " crawled...")
-
-        if not self.reverse:
-            pages.reverse()
-
+        pages = self.get_pages(mode, base_url)
         if not pages:
             print(self.deviant + "'s " + mode + " had no deviations.")
             return
-        else:
-            try:
-                da_make_dirs(base_dir)
-            except OSError as mkdir_error:
-                print(str(mkdir_error))
-                return
-            print("Total deviations in " + self.deviant + "'s " +
-                  mode + " found: " + str(len(pages)))
+        print("Total deviations in " + self.deviant + "'s " +
+              mode + " found: " + str(len(pages)))
 
-        # DEPTH 2
-        counter2 = 0
-        for link in pages:
-            counter2 += 1
-            if self.verbose:
-                print("Downloading " + str(counter2) + " of " +
-                      str(len(pages)) + " ( " + link + " )")
-            filename = ""
-            filelink = ""
-            try:
-                filename, filelink = self.find_link(link)
-            except (KeyboardInterrupt, SystemExit):
-                raise
-            except DagrException as link_error:
-                self.handle_download_error(link, link_error)
-                continue
-
-            if not self.test_only:
-                try:
-                    if mode in ["query", "album", "collection"]:
-                        self.get(filelink, self.deviant + "/" +
-                                 mode + "/" + mode_arg + "/" + filename)
-                    else:
-                        self.get(filelink, self.deviant + "/" +
-                                 mode + "/" + filename)
-                except DagrException as get_error:
-                    self.handle_download_error(link, get_error)
-                    continue
-            else:
-                print(filelink)
+        self.get_images(mode, mode_arg, pages)
 
         print(self.deviant + "'s " + mode + " successfully ripped.")
 
     def group_get(self, mode):
-        # TODO: merge duplicate code with deviant_get
         print("Ripping " + self.deviant + "'s " + mode + "...")
 
-        url = 'https://www.deviantart.com/' + self.deviant.lower() + '/'
+        base_url = 'https://www.deviantart.com/' + self.deviant.lower() + '/'
         if mode == "favs":
-            url += "favourites/"
+            base_url += "favourites/"
         elif mode == "gallery":
-            url += "gallery/"
+            base_url += "gallery/"
 
         folders = []
 
         i = 0
         while True:
-            html = self.get(url + '?offset=' + str(i))
-            k = re.findall('class="ch-top" href="' + url +
+            html = self.get(base_url + '?offset=' + str(i))
+            k = re.findall('class="ch-top" href="' + base_url +
                            '([0-9]*/[a-zA-Z0-9_-]*)"',
                            html, re.IGNORECASE)
             if k == []:
@@ -326,7 +322,7 @@ class Dagr:
             new_folder = False
             for match in k:
                 if match not in folders:
-                    folders += k
+                    folders.append(match)
                     new_folder = True
             if not new_folder:
                 break
@@ -337,78 +333,23 @@ class Dagr:
 
         if not folders:
             print(self.deviant + "'s " + mode + " is empty.")
-            return
-        else:
-            print("Total folders in " + self.deviant + "'s " +
-                  mode + " found: " + str(len(folders)))
+
+        print("Total folders in " + self.deviant + "'s " +
+              mode + " found: " + str(len(folders)))
 
         if self.reverse:
             folders.reverse()
 
         pages = []
         for folder in folders:
-            (folderid, label) = folder.split('/')
-            for i in range(0, int(Dagr.MAX_DEVIATIONS / 24), 24):
-                try:
-                    html = self.get(url + folder + '?offset=' + str(i))
-                except DagrException:
-                    print("Could not find " + self.deviant + "'s " +
-                          mode + " " + folder)
-                    return
-
-                prelim = re.findall(Dagr.ART_PATTERN, html,
-                                    re.IGNORECASE | re.DOTALL)
-
-                c = len(prelim)
-                for match in prelim:
-                    if match in pages:
-                        c -= 1
-                    else:
-                        pages.append(match)
-
-                done = re.findall("(This section has no deviations yet!|"
-                                  "This collection has no items yet!)",
-                                  html, re.IGNORECASE | re.S)
-
-                if len(done) >= 1 or c <= 0:
-                    break
-
-                print("Page " + str(int((i / 24) + 1)) +
-                      " in folder " + label + " crawled...")
+            label = folder.split("/")[-1]
+            print("Crawling folder " + label + "...")
+            pages = self.get_pages(mode, base_url + folder + '?offset=')
 
             if not self.reverse:
                 pages.reverse()
 
-            try:
-                da_make_dirs(self.directory + self.deviant + "/" +
-                             mode + "/" + label)
-            except OSError as mkdir_error:
-                print(str(mkdir_error))
-            counter = 0
-            for link in pages:
-                counter += 1
-                if self.verbose:
-                    print("Downloading " + str(counter) + " of " +
-                          str(len(pages)) + " ( " + link + " )")
-                filename = ""
-                filelink = ""
-                try:
-                    filename, filelink = self.find_link(link)
-                except (KeyboardInterrupt, SystemExit):
-                    raise
-                except DagrException as link_error:
-                    self.handle_download_error(link, link_error)
-                    continue
-
-                if not self.test_only:
-                    try:
-                        self.get(filelink, self.deviant + "/" +
-                                 mode + "/" + label + "/" + filename)
-                    except DagrException as get_error:
-                        self.handle_download_error(link, get_error)
-                        continue
-                else:
-                    print(filelink)
+            self.get_images(mode, label, pages)
 
         print(self.deviant + "'s " + mode + " successfully ripped.")
 
@@ -573,11 +514,11 @@ def main():
             if favs:
                 ripper.deviant_get("favs")
             if collection:
-                ripper.deviant_get("collection", collection)
+                ripper.deviant_get("collection", mode_arg=collection)
             if album:
-                ripper.deviant_get("album", album)
+                ripper.deviant_get("album", mode_arg=album)
             if query:
-                ripper.deviant_get("query", query)
+                ripper.deviant_get("query", mode_arg=query)
     print("Job complete.")
 
     ripper.print_errors()
