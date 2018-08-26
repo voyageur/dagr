@@ -20,20 +20,21 @@ from os.path import (
     expanduser, join as path_join
     )
 from random import choice
+from requests import (
+    adapters as req_adapters,
+    codes as req_codes,
+    session as req_session
+    )
+from mechanicalsoup import StatefulBrowser
 
+# Python 2/3 compatibility stuff
 try:
     # Python 3
     import configparser
 except ImportError:
     # Python 2
     import ConfigParser as configparser
-
-from mechanicalsoup import StatefulBrowser
-from requests import (
-    adapters as req_adapters,
-    codes as req_codes,
-    session as req_session
-    )
+FNF_Error = getattr(__builtins__, 'FileNotFoundError', IOError)
 
 
 # Helper functions
@@ -56,7 +57,7 @@ class Dagr:
     """deviantArt gallery ripper class"""
 
     NAME = basename(__file__)
-    __version__ = "0.70"
+    __version__ = "0.70.1"
     MAX_DEVIATIONS = 1000000  # max deviations
     ART_PATTERN = (r"https://www\.deviantart\.com/"
                    r"[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*")
@@ -253,7 +254,7 @@ class Dagr:
         try:
             with open(base_dir + "/.dagr_downloaded_pages", "r") as filehandle:
                 existing_pages = json.load(filehandle)
-        except FileNotFoundError as fnf_error:
+        except FNF_Error as fnf_error:
             # May not exist (new directory, ...)
             pass
         if not self.overwrite:
