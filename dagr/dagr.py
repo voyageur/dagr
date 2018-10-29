@@ -186,6 +186,11 @@ class Dagr:
             if filesearch:
                 filelink = filesearch['src']
 
+        if current_page.find("span",{"itemprop": "title"}).text == "Literature":
+            filelink = self.browser.get_url()
+            filename = basename(filelink+".html")
+            return (filename, filelink)
+
         if not filelink:
             if mature_error:
                 if self.mature:
