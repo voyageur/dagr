@@ -14,7 +14,7 @@ import json
 import re
 import sys
 from getopt import gnu_getopt, GetoptError
-from os import getcwd, makedirs
+from os import getcwd, makedirs, utime
 from os.path import (
     abspath, basename, exists as path_exists,
     expanduser, join as path_join
@@ -26,6 +26,9 @@ from requests import (
     session as req_session
     )
 from mechanicalsoup import StatefulBrowser
+#Last Modified time imports
+from email.utils import parsedate
+from time import mktime
 
 # Python 2/3 compatibility stuff
 try:
@@ -142,6 +145,12 @@ class Dagr:
 
         if file_name is None:
             return get_resp.text
+
+        try: #Set file dates to last modified time. Fails on downloaded HTML pages
+            mod_time = mktime(parsedate(get_resp.headers.get("last-modified")))
+            utime(file_name, times=(mod_time, mod_time))
+        except:
+            pass
 
         return file_name
 
