@@ -14,7 +14,7 @@ import json
 import re
 import sys
 from getopt import gnu_getopt, GetoptError
-from os import getcwd, makedirs
+from os import getcwd, makedirs, utime
 from os.path import (
     abspath, basename, exists as path_exists,
     expanduser, join as path_join
@@ -26,6 +26,9 @@ from requests import (
     session as req_session
     )
 from mechanicalsoup import StatefulBrowser
+#Last Modified time imports
+from email.utils import parsedate
+from time import mktime
 
 # Python 2/3 compatibility stuff
 try:
@@ -125,7 +128,16 @@ class Dagr:
                 path_exists(file_name)):
             print(file_name + " exists - skipping")
             return None
-        get_resp = self.browser.open(url)
+        try:  #Download and save soup links
+            get_resp = self.browser.download_link(url,file_name)
+        except: #If direct download fails (Fallbacks, HTML pages) try old way
+            get_resp = self.browser.session.get(url)
+            if file_name:
+                # Open our local file for writing
+                local_file = open(file_name, "wb")
+                # Write to our local file
+                local_file.write(get_resp.content)
+                local_file.close()
 
         if get_resp.status_code != req_codes.ok:
             raise DagrException("incorrect status code - " +
@@ -134,11 +146,12 @@ class Dagr:
         if file_name is None:
             return get_resp.text
 
-        # Open our local file for writing
-        local_file = open(file_name, "wb")
-        # Write to our local file
-        local_file.write(get_resp.content)
-        local_file.close()
+        try: #Set file dates to last modified time. Fails on downloaded HTML pages
+            mod_time = mktime(parsedate(get_resp.headers.get("last-modified")))
+            utime(file_name, times=(mod_time, mod_time))
+        except:
+            pass
+
         return file_name
 
     def find_link(self, link):
@@ -153,10 +166,9 @@ class Dagr:
                 img_link = candidate
                 break
 
-        if img_link:
-            self.browser.follow_link(img_link)
-            filelink = self.browser.get_url()
-            return (basename(filelink), filelink)
+        if img_link and img_link.get("data-download_url"):
+            filename = basename(img_link.get("data-download_url").split("?")[0])
+            return (basename(filename), img_link)
 
         if self.verbose:
             print("Download link not found, falling back to direct image")
@@ -182,6 +194,11 @@ class Dagr:
                                                     re.compile(".*normal")})
             if filesearch:
                 filelink = filesearch['src']
+
+        if current_page.find("span",{"itemprop": "title"}).text == "Literature":
+            filelink = self.browser.get_url()
+            filename = basename(filelink+".html")
+            return (filename, filelink)
 
         if not filelink:
             if mature_error:
