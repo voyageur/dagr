@@ -13,6 +13,7 @@
 import json
 import re
 import sys
+from email.utils import parsedate
 from getopt import gnu_getopt, GetoptError
 from os import getcwd, makedirs, utime
 from os.path import (
@@ -20,15 +21,14 @@ from os.path import (
     expanduser, join as path_join
     )
 from random import choice
+from time import mktime
+
 from requests import (
     adapters as req_adapters,
     codes as req_codes,
     session as req_session
     )
 from mechanicalsoup import StatefulBrowser
-#Last Modified time imports
-from email.utils import parsedate
-from time import mktime
 
 # Python 2/3 compatibility stuff
 try:
@@ -60,7 +60,7 @@ class Dagr:
     """deviantArt gallery ripper class"""
 
     NAME = basename(__file__)
-    __version__ = "0.70.1"
+    __version__ = "0.70.2"
     MAX_DEVIATIONS = 1000000  # max deviations
     ART_PATTERN = (r"https://www\.deviantart\.com/"
                    r"[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*")
@@ -128,9 +128,12 @@ class Dagr:
                 path_exists(file_name)):
             print(file_name + " exists - skipping")
             return None
-        try:  #Download and save soup links
-            get_resp = self.browser.download_link(url,file_name)
-        except: #If direct download fails (Fallbacks, HTML pages) try old way
+        try:
+            # Download and save soup links
+            get_resp = self.browser.download_link(url, file_name)
+        except:
+            # TODO: fix bare except
+            # If direct download fails (Fallbacks, HTML pages) try old way
             get_resp = self.browser.session.get(url)
             if file_name:
                 # Open our local file for writing
@@ -146,10 +149,13 @@ class Dagr:
         if file_name is None:
             return get_resp.text
 
-        try: #Set file dates to last modified time. Fails on downloaded HTML pages
+        try:
+            # Set file dates to last modified time
+            # Fails on downloaded HTML pages
             mod_time = mktime(parsedate(get_resp.headers.get("last-modified")))
             utime(file_name, times=(mod_time, mod_time))
         except:
+            # TODO: fix bare except
             pass
 
         return file_name
@@ -167,7 +173,8 @@ class Dagr:
                 break
 
         if img_link and img_link.get("data-download_url"):
-            filename = basename(img_link.get("data-download_url").split("?")[0])
+            filename = basename(
+                img_link.get("data-download_url").split("?")[0])
             return (basename(filename), img_link)
 
         if self.verbose:
@@ -195,7 +202,8 @@ class Dagr:
             if filesearch:
                 filelink = filesearch['src']
 
-        if current_page.find("span",{"itemprop": "title"}).text == "Literature":
+        if current_page.find(
+                "span", {"itemprop": "title"}).text == "Literature":
             filelink = self.browser.get_url()
             filename = basename(filelink+".html")
             return (filename, filelink)
