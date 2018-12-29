@@ -25,6 +25,7 @@ from os.path import (
 from random import choice
 from time import mktime
 
+from bs4.element import Tag
 from requests import (
     adapters as req_adapters,
     codes as req_codes,
@@ -62,7 +63,7 @@ class Dagr:
     """deviantArt gallery ripper class"""
 
     NAME = basename(__file__)
-    __version__ = "0.71"
+    __version__ = "0.71.1"
     MAX_DEVIATIONS = 1000000  # max deviations
     ART_PATTERN = (r"https://www\.deviantart\.com/"
                    r"[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*")
@@ -132,15 +133,15 @@ class Dagr:
             print(glob(file_name + ".*")[0] + " exists - skipping")
             return None
 
-        if isinstance(url, str):
+        if isinstance(url, Tag):
+            # Download and save soup links
+            get_resp = self.browser.download_link(url, file_name)
+        else:
             # Direct URL
             get_resp = self.browser.session.get(url)
             if file_name:
                 with open(file_name, "wb") as local_file:
                     local_file.write(get_resp.content)
-        else:
-            # Download and save soup links
-            get_resp = self.browser.download_link(url, file_name)
 
         if get_resp.status_code != req_codes.ok:
             raise DagrException("incorrect status code - " +
@@ -152,7 +153,7 @@ class Dagr:
         if get_resp.headers.get("last-modified"):
             # Set file dates to last modified time
             mod_time = mktime(parsedate(get_resp.headers.get("last-modified")))
-            utime(file_name, times=(mod_time, mod_time))
+            utime(file_name, (mod_time, mod_time))
 
         if get_resp.headers.get("content-type"):
             rename(file_name, file_name + guess_extension(
