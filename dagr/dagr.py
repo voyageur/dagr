@@ -37,7 +37,7 @@ try:
 except ImportError:
     # Python 2
     import ConfigParser as configparser
-FNF_Error = getattr(__builtins__, 'FileNotFoundError', IOError)
+FNF_ERROR = getattr(__builtins__, 'FileNotFoundError', IOError)
 
 
 # Helper functions
@@ -272,7 +272,7 @@ class Dagr:
         try:
             with open(base_dir + "/.dagr_downloaded_pages", "r") as filehandle:
                 existing_pages = json.load(filehandle)
-        except FNF_Error as fnf_error:
+        except FNF_ERROR:
             # May not exist (new directory, ...)
             pass
         if not self.overwrite:
