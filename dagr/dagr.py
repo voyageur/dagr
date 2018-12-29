@@ -15,7 +15,8 @@ import re
 import sys
 from email.utils import parsedate
 from getopt import gnu_getopt, GetoptError
-from os import getcwd, makedirs, utime
+from mimetypes import guess_extension, init as mimetypes_init
+from os import getcwd, makedirs, rename, utime
 from os.path import (
     abspath, basename, exists as path_exists,
     expanduser, join as path_join
@@ -67,6 +68,7 @@ class Dagr:
 
     def __init__(self):
         # Internals
+        mimetypes_init()
         self.browser = None
         self.errors_count = dict()
 
@@ -150,6 +152,10 @@ class Dagr:
             # Set file dates to last modified time
             mod_time = mktime(parsedate(get_resp.headers.get("last-modified")))
             utime(file_name, times=(mod_time, mod_time))
+
+        if get_resp.headers.get("content-type"):
+            rename(file_name, file_name + guess_extension(
+                get_resp.headers.get("content-type")))
 
         return file_name
 
