@@ -161,6 +161,7 @@ class Dagr:
 
     def find_link(self, link):
         filelink = None
+        filename = basename(link)
         mature_error = False
         self.browser.open(link)
         # Full image link (via download link)
@@ -172,9 +173,7 @@ class Dagr:
                 break
 
         if img_link and img_link.get("data-download_url"):
-            filename = basename(
-                img_link.get("data-download_url").split("?")[0])
-            return (basename(filename), img_link)
+            return (filename, img_link)
 
         if self.verbose:
             print("Download link not found, falling back to direct image")
@@ -204,7 +203,6 @@ class Dagr:
         if current_page.find(
                 "span", {"itemprop": "title"}).text == "Literature":
             filelink = self.browser.get_url()
-            filename = basename(filelink+".html")
             return (filename, filelink)
 
         if not filelink:
@@ -217,7 +215,6 @@ class Dagr:
             else:
                 raise DagrException("all attemps to find a link failed")
 
-        filename = basename(filelink)
         return (filename, filelink)
 
     def handle_download_error(self, link, link_error):
