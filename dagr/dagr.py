@@ -15,6 +15,7 @@ import re
 import sys
 from email.utils import parsedate
 from getopt import gnu_getopt, GetoptError
+from glob import glob
 from mimetypes import guess_extension, init as mimetypes_init
 from os import getcwd, makedirs, rename, utime
 from os.path import (
@@ -127,8 +128,8 @@ class Dagr:
 
     def get(self, url, file_name=None):
         if (file_name and not self.overwrite and
-                path_exists(file_name)):
-            print(file_name + " exists - skipping")
+                glob(file_name + ".*")):
+            print(glob(file_name + ".*")[0] + " exists - skipping")
             return None
 
         if isinstance(url, str):
