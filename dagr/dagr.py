@@ -128,19 +128,16 @@ class Dagr:
                 path_exists(file_name)):
             print(file_name + " exists - skipping")
             return None
-        try:
-            # Download and save soup links
-            get_resp = self.browser.download_link(url, file_name)
-        except:
-            # TODO: fix bare except
-            # If direct download fails (Fallbacks, HTML pages) try old way
+
+        if isinstance(url, str):
+            # Direct URL
             get_resp = self.browser.session.get(url)
             if file_name:
-                # Open our local file for writing
-                local_file = open(file_name, "wb")
-                # Write to our local file
-                local_file.write(get_resp.content)
-                local_file.close()
+                with open(file_name, "wb") as local_file:
+                    local_file.write(get_resp.content)
+        else:
+            # Download and save soup links
+            get_resp = self.browser.download_link(url, file_name)
 
         if get_resp.status_code != req_codes.ok:
             raise DagrException("incorrect status code - " +
@@ -149,14 +146,10 @@ class Dagr:
         if file_name is None:
             return get_resp.text
 
-        try:
+        if get_resp.headers.get("last-modified"):
             # Set file dates to last modified time
-            # Fails on downloaded HTML pages
             mod_time = mktime(parsedate(get_resp.headers.get("last-modified")))
             utime(file_name, times=(mod_time, mod_time))
-        except:
-            # TODO: fix bare except
-            pass
 
         return file_name
 
