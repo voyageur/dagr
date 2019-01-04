@@ -63,7 +63,7 @@ class Dagr:
     """deviantArt gallery ripper class"""
 
     NAME = basename(__file__)
-    __version__ = "0.71.1"
+    __version__ = "0.71.2"
     MAX_DEVIATIONS = 1000000  # max deviations
     ART_PATTERN = (r"https://www\.deviantart\.com/"
                    r"[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*")
@@ -157,7 +157,7 @@ class Dagr:
 
         if get_resp.headers.get("content-type"):
             rename(file_name, file_name + guess_extension(
-                get_resp.headers.get("content-type")))
+                get_resp.headers.get("content-type").split(";")[0]))
 
         return file_name
 
