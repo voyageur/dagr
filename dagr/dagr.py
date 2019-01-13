@@ -16,7 +16,7 @@ import sys
 from email.utils import parsedate
 from getopt import gnu_getopt, GetoptError
 from glob import glob
-from mimetypes import guess_extension, init as mimetypes_init
+from mimetypes import guess_extension, add_type, init as mimetypes_init
 from os import getcwd, makedirs, rename, utime
 from os.path import (
     abspath, basename, exists as path_exists,
@@ -63,7 +63,7 @@ class Dagr:
     """deviantArt gallery ripper class"""
 
     NAME = basename(__file__)
-    __version__ = "0.71.2"
+    __version__ = "0.71.3"
     MAX_DEVIATIONS = 1000000  # max deviations
     ART_PATTERN = (r"https://www\.deviantart\.com/"
                    r"[a-zA-Z0-9_-]*/art/[a-zA-Z0-9_-]*")
@@ -71,6 +71,7 @@ class Dagr:
     def __init__(self):
         # Internals
         mimetypes_init()
+        add_type('image/vnd.adobe.photoshop', '.psd')
         self.browser = None
         self.errors_count = dict()
 
@@ -156,8 +157,13 @@ class Dagr:
             utime(file_name, (mod_time, mod_time))
 
         if get_resp.headers.get("content-type"):
-            rename(file_name, file_name + guess_extension(
-                get_resp.headers.get("content-type").split(";")[0]))
+            content_type =  get_resp.headers.get("content-type").split(";")[0]
+            file_ext = guess_extension(content_type)
+            if file_ext: 
+                rename(file_name, file_name + file_ext)
+            else:
+                raise DagrException('unknown content-type - ' + content_type)
+            
 
         return file_name
 
