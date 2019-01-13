@@ -72,6 +72,7 @@ class Dagr:
         # Internals
         mimetypes_init()
         add_type('image/vnd.adobe.photoshop', '.psd')
+        add_type('application/rar', '.rar')
         self.browser = None
         self.errors_count = dict()
 
