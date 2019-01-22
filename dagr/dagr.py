@@ -94,6 +94,8 @@ class Dagr:
         # These MIME types may be missing from some systems
         add_mimetype('image/vnd.adobe.photoshop', '.psd')
         add_mimetype('application/rar', '.rar')
+        add_mimetype('application/x-rar-compressed', '.rar')
+        add_mimetype('image/x-canon-cr2', '.tif')
 
     def load_configuration(self):
         my_conf = configparser.ConfigParser()
