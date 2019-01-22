@@ -166,13 +166,12 @@ class Dagr:
             utime(file_name, (mod_time, mod_time))
 
         if get_resp.headers.get("content-type"):
-            content_type =  get_resp.headers.get("content-type").split(";")[0]
+            content_type = get_resp.headers.get("content-type").split(";")[0]
             file_ext = guess_extension(content_type)
-            if file_ext: 
+            if file_ext:
                 rename(file_name, file_name + file_ext)
             else:
                 raise DagrException('unknown content-type - ' + content_type)
-            
 
         return file_name
 
