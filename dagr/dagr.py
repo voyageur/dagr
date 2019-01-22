@@ -16,7 +16,11 @@ import sys
 from email.utils import parsedate
 from getopt import gnu_getopt, GetoptError
 from glob import glob
-from mimetypes import guess_extension, add_type, init as mimetypes_init
+from mimetypes import (
+    guess_extension,
+    add_type as add_mimetype,
+    init as mimetypes_init
+    )
 from os import getcwd, makedirs, rename, utime
 from os.path import (
     abspath, basename, exists as path_exists,
@@ -70,9 +74,7 @@ class Dagr:
 
     def __init__(self):
         # Internals
-        mimetypes_init()
-        add_type('image/vnd.adobe.photoshop', '.psd')
-        add_type('application/rar', '.rar')
+        self.init_mimetypes()
         self.browser = None
         self.errors_count = dict()
 
@@ -86,6 +88,12 @@ class Dagr:
 
         # Current status
         self.deviant = ""
+
+    def init_mimetypes(self):
+        mimetypes_init()
+        # These MIME types may be missing from some systems
+        add_mimetype('image/vnd.adobe.photoshop', '.psd')
+        add_mimetype('application/rar', '.rar')
 
     def load_configuration(self):
         my_conf = configparser.ConfigParser()
