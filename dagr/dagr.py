@@ -100,7 +100,6 @@ class Dagr:
         add_mimetype('application/x-7z-compressed', '.7z')
         add_mimetype('application/x-lha', '.lzh')
 
-
     def load_configuration(self):
         my_conf = configparser.ConfigParser()
         # Try to read global then local configuration
