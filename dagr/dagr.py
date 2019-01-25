@@ -98,6 +98,8 @@ class Dagr:
         add_mimetype('application/x-rar', '.rar')
         add_mimetype('image/x-canon-cr2', '.tif')
         add_mimetype('application/x-7z-compressed', '.7z')
+        add_mimetype('application/x-lha', '.lzh')
+
 
     def load_configuration(self):
         my_conf = configparser.ConfigParser()
