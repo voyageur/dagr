@@ -17,7 +17,7 @@ from email.utils import parsedate
 from getopt import gnu_getopt, GetoptError
 from glob import glob
 from mimetypes import (
-    guess_extension,
+    guess_extension as guess_mime_extension,
     add_type as add_mimetype,
     init as mimetypes_init
     )
@@ -101,6 +101,12 @@ class Dagr:
         add_mimetype('image/vnd.adobe.photoshop', '.psd')
         add_mimetype('image/x-canon-cr2', '.tif')
 
+    def guess_extension(self, type):
+        # mimetypes will usually return .jpe, valid but unusual
+        if type == "image/jpeg":
+            return ".jpg"
+        return guess_mime_extension(type)
+
     def load_configuration(self):
         my_conf = configparser.ConfigParser()
         # Try to read global then local configuration
@@ -173,7 +179,7 @@ class Dagr:
 
         if get_resp.headers.get("content-type"):
             content_type = get_resp.headers.get("content-type").split(";")[0]
-            file_ext = guess_extension(content_type)
+            file_ext = self.guess_extension(content_type)
             if file_ext:
                 rename(file_name, file_name + file_ext)
             else:
